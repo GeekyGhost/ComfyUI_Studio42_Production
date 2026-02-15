@@ -50,7 +50,7 @@ try:
 except ImportError:
     PIL_AVAILABLE = False
 
-from ..utils.s42p_audio_utils import (
+from s42p_audio_utils import (
     audio_from_comfy, audio_to_comfy, ensure_stereo, ensure_float32
 )
 

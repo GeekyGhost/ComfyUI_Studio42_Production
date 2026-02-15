@@ -32,7 +32,7 @@ try:
 except ImportError:
     SCIPY_AVAILABLE = False
 
-from ..utils.s42p_audio_utils import (
+from s42p_audio_utils import (
     audio_from_comfy, audio_to_comfy, ensure_stereo, ensure_float32,
     db_to_linear, linear_to_db, rms_db, peak_db,
     measure_lufs, measure_true_peak_db, lufs_gain,
@@ -291,7 +291,7 @@ class S42PMasteringChain:
             logger.warning(f"Input measurement failed: {e}")
 
         # ── Step 1: Stereo Width (M/S) ────────────────────────────────────────
-        from ..utils.s42p_audio_utils import to_mid_side, from_mid_side
+        from s42p_audio_utils import to_mid_side, from_mid_side
         mid, side = to_mid_side(arr)
 
         # Apply M/S gains

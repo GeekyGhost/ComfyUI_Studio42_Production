@@ -26,7 +26,7 @@ except ImportError:
     SCIPY_AVAILABLE = False
     logger.error("scipy required for multiband crossover filters")
 
-from ..utils.s42p_audio_utils import (
+from s42p_audio_utils import (
     audio_from_comfy, audio_to_comfy, ensure_stereo, ensure_float32,
     db_to_linear, linear_to_db, rms_db, peak_db, soft_limit
 )

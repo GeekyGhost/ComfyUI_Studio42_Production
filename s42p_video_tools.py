@@ -21,7 +21,7 @@ import numpy as np
 import logging
 from typing import Optional, Tuple
 
-from .s42p_video_utils import (
+from s42p_video_utils import (
     ensure_rgb, match_resolution, convert_fps, frames_to_np, np_to_frames
 )
 

@@ -35,7 +35,7 @@ from typing import Optional, Tuple
 
 from PIL import Image
 
-from .s42p_video_utils import (
+from s42p_video_utils import (
     ensure_rgb, parse_keyframe_string, build_value_curve,
     frame_to_pil, pil_to_frame, ALL_EASINGS,
     EASING_FUNCTIONS

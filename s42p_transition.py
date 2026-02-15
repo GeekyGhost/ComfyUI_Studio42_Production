@@ -45,7 +45,7 @@ from typing import Tuple
 
 from PIL import Image
 
-from .s42p_video_utils import (
+from s42p_video_utils import (
     ensure_rgb, match_resolution, apply_easing,
     frame_to_pil, pil_to_frame
 )

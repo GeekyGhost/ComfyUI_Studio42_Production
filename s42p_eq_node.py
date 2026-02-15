@@ -25,7 +25,7 @@ except ImportError:
     logger.error("scipy is required for the Parametric EQ node. Install with: pip install scipy")
 
 # Pull in shared utils (relative import works because __init__.py adds parent to path)
-from ..utils.s42p_audio_utils import (
+from s42p_audio_utils import (
     audio_from_comfy, audio_to_comfy, ensure_stereo, ensure_float32,
     rms_db, peak_db
 )
