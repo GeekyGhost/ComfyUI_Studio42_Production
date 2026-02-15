@@ -201,3 +201,103 @@ Without `librosa`: Beat detection uses autocorrelation fallback (less accurate).
 
 *S42 Production Suite — built for music video, lip-sync, and full song production.*
 *DON'T PANIC. Your audio will sound professional.*
+
+---
+
+## Phase 2 — Animation & Video (Added)
+
+### 🎞️ S42P Keyframe Animator
+**2D animation compositor** — animates a layer image over a video frame batch.
+
+**Keyframe String Format:** `"frame:value, frame:value"`
+Optional per-keyframe easing: `"frame:value:easing_name"`
+
+| Property | Example | Effect |
+|----------|---------|--------|
+| `position_x` | `"0:1920, 12:960"` | Slide in from right |
+| `position_y` | `"0:540"` | Hold at vertical centre |
+| `scale_x` | `"0:0.5, 12:1.0:bounce"` | Bounce scale up |
+| `opacity` | `"0:0.0, 8:1.0, 40:1.0, 48:0.0"` | Fade in, hold, fade out |
+| `rotation` | `"0:0, 48:360"` | Full spin over 48 frames |
+
+**Available easings:** `linear`, `ease_in`, `ease_out`, `ease_in_out`,
+`ease_in_cubic`, `ease_out_cubic`, `ease_in_out_cubic`, `elastic_in`, `elastic_out`, `bounce`
+
+**Typical workflow:**
+```
+[BG Remover] → MASK  ─┐
+[BG Remover] → IMAGE  ─┤→ [Keyframe Animator] → [Transition] → [VHS Video Combine]
+[Wan Video]  → IMAGE  ─┘
+```
+
+---
+
+### 🎬 S42P Transition
+**20 CapCut-style transitions** between two video clips.
+
+| Category | Types |
+|----------|-------|
+| Basic | `cut`, `dissolve`, `fade_black`, `fade_white` |
+| Push | `push_left`, `push_right`, `push_up`, `push_down` |
+| Wipe | `wipe_left`, `wipe_right`, `wipe_up`, `wipe_down` |
+| Motion | `zoom_in`, `zoom_out`, `spin_cw`, `spin_ccw` |
+| Creative | `glitch`, `iris_in`, `slide_up`, `slide_down` |
+
+Output = clip_a (trimmed) + transition frames + clip_b (trimmed).
+Chain multiple Transition nodes to build a multi-clip sequence.
+
+---
+
+### 🛠️ S42P Video Tools
+**Four modes** via a single mode selector:
+
+- **trim** — cut to in/out points (frame or seconds)
+- **concatenate** — join up to 6 clips (auto-matches resolution)
+- **reverse** — flip playback direction
+- **fps_convert** — e.g. 8fps Wan output → 24fps smooth (blend or duplicate)
+
+---
+
+### 🎨 S42P Color Grade
+**Three grading stages**, independently bypassable:
+
+1. **LUT** — load any `.cube` file (film emulation, LOG→REC709, custom looks)
+   - `lut_strength` slider lets you blend the LUT (1.0 = full, 0.5 = half)
+2. **Curves/Levels** — ASC CDL-style lift/gamma/gain per channel + master contrast + saturation
+3. **HSL** — hue/saturation/lightness per colour range (reds, yellows, greens, cyans, blues, magentas)
+
+Signal flow: `LUT → Curves → HSL`
+
+---
+
+## Full Recommended Workflow
+
+### Music Video (AceStep → beat-synced → Wan → graded → export)
+```
+[AceStep]           → [S42P EQ] → [S42P Dynamics] → [S42P Mastering Chain]
+                    → [S42P Beat Analyzer] ─── beat_data_json → [Wan S2V]
+[Wan S2V frames]    → [S42P Keyframe Animator] (logo/text overlays)
+                    → [S42P Transition] (between scenes)
+                    → [S42P Color Grade]
+                    → [VHS Video Combine + mastered_audio]
+```
+
+### Talking Head (TTS → lip sync → grade → export)
+```
+[Kokoro TTS]        → [S42P EQ] → [S42P Dynamics] → [S42P Mastering Chain]
+[Portrait image]    → [BG Remover] → [Layer Composer] (background plate)
+                    → [Geeky LatentSync]
+                    → [S42P Color Grade]
+                    → [VHS Video Combine]
+```
+
+### Multi-clip Edit
+```
+[Wan clip 1] → [S42P Video Tools: fps_convert 8→24]
+             → [S42P Transition: dissolve] ──────────────────┐
+[Wan clip 2] → [S42P Video Tools: trim 0s–10s]              │
+             → [S42P Transition: push_left] ─────────────────┤
+[Wan clip 3] ────────────────────────────────────────────────┘
+             → [S42P Color Grade]
+             → [VHS Video Combine]
+```

@@ -1,32 +1,24 @@
 """
 S42 Production Suite for ComfyUI
 =================================
-Professional audio mastering, analysis, and production tools.
+Professional audio mastering, 2D animation, video editing, and color grading.
 
 Node Menu Category: S42 Production Suite
 
-Phase 1 — Audio Mastering Chain:
-  🎛️ S42P Parametric EQ          — 8-band parametric equalizer
-  🔊 S42P Dynamics Processor     — Multiband compressor / expander / gate
-  🎚️ S42P Mastering Chain        — LUFS targeting, stereo width, exciter, limiter, dither
-  🥁 S42P Beat Analyzer          — BPM, beat grid, key detection + visualization
+AUDIO MASTERING CHAIN:
+  S42P Parametric EQ, Dynamics Processor, Mastering Chain, Beat Analyzer
 
-Designed for:
-  • Music video production (AceStep → EQ → Dynamics → Master → Beat Analyze → Wan)
-  • Talking head / lip-sync (TTS → EQ → Dynamics → Master → LatentSync)
-  • Full song stem mastering (per-stem EQ + Dynamics, final master on mixdown)
+ANIMATION & VIDEO EDITING:
+  S42P Keyframe Animator, Transition, Video Tools, Color Grade
 
-Hardware target: RTX 4090 16GB (laptop) — all DSP runs on CPU, GPU stays for Wan/Qwen.
-Python: 3.12 | ComfyUI Portable
+Works alongside Studio42 (BG Remover, Layer Composer) and GeekyGhost (TTS, LatentSync).
 
-Author: Studio42 Production Suite
-Version: 1.0.0
+Version: 2.0.0 | Python 3.12 | ComfyUI Portable
 """
 
 import sys
 import os
 
-# Make relative imports work correctly in ComfyUI portable
 _HERE = os.path.dirname(os.path.abspath(__file__))
 if _HERE not in sys.path:
     sys.path.insert(0, _HERE)
@@ -34,65 +26,55 @@ if _HERE not in sys.path:
 NODE_CLASS_MAPPINGS        = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
-# ── Parametric EQ ─────────────────────────────────────────────────────────────
-try:
-    from .audio.s42p_eq_node import (
-        NODE_CLASS_MAPPINGS        as _EQ_CM,
-        NODE_DISPLAY_NAME_MAPPINGS as _EQ_DN,
-    )
-    NODE_CLASS_MAPPINGS.update(_EQ_CM)
-    NODE_DISPLAY_NAME_MAPPINGS.update(_EQ_DN)
-    print("  ✅ S42P Parametric EQ loaded")
-except Exception as e:
-    print(f"  ⚠️  S42P Parametric EQ failed to load: {e}")
-    print("       → Check scipy is installed: pip install scipy")
+print("\n" + "="*60)
+print("  S42 Production Suite v2.0.0 — Loading...")
+print("="*60)
 
-# ── Dynamics Processor ────────────────────────────────────────────────────────
-try:
-    from .audio.s42p_dynamics_node import (
-        NODE_CLASS_MAPPINGS        as _DYN_CM,
-        NODE_DISPLAY_NAME_MAPPINGS as _DYN_DN,
-    )
-    NODE_CLASS_MAPPINGS.update(_DYN_CM)
-    NODE_DISPLAY_NAME_MAPPINGS.update(_DYN_DN)
-    print("  ✅ S42P Dynamics Processor loaded")
-except Exception as e:
-    print(f"  ⚠️  S42P Dynamics Processor failed to load: {e}")
-    print("       → Check scipy is installed: pip install scipy")
+# ── Audio nodes ───────────────────────────────────────────────────────────────
+_audio_nodes = [
+    ("audio.s42p_eq_node",        "S42P Parametric EQ",      "pip install scipy"),
+    ("audio.s42p_dynamics_node",  "S42P Dynamics Processor", "pip install scipy"),
+    ("audio.s42p_mastering_node", "S42P Mastering Chain",    "pip install pyloudnorm"),
+    ("audio.s42p_beat_analyzer",  "S42P Beat Analyzer",      "pip install librosa"),
+]
 
-# ── Mastering Chain ───────────────────────────────────────────────────────────
-try:
-    from .audio.s42p_mastering_node import (
-        NODE_CLASS_MAPPINGS        as _MAST_CM,
-        NODE_DISPLAY_NAME_MAPPINGS as _MAST_DN,
-    )
-    NODE_CLASS_MAPPINGS.update(_MAST_CM)
-    NODE_DISPLAY_NAME_MAPPINGS.update(_MAST_DN)
-    print("  ✅ S42P Mastering Chain loaded")
-except Exception as e:
-    print(f"  ⚠️  S42P Mastering Chain failed to load: {e}")
-    print("       → Check pyloudnorm (optional but recommended): pip install pyloudnorm")
+for mod_path, label, fix in _audio_nodes:
+    try:
+        import importlib
+        mod = importlib.import_module(f".{mod_path}", package=__name__)
+        NODE_CLASS_MAPPINGS.update(mod.NODE_CLASS_MAPPINGS)
+        NODE_DISPLAY_NAME_MAPPINGS.update(mod.NODE_DISPLAY_NAME_MAPPINGS)
+        print(f"  OK {label}")
+    except Exception as e:
+        print(f"  !! {label} FAILED: {e}")
+        print(f"       -> {fix}")
 
-# ── Beat Analyzer ─────────────────────────────────────────────────────────────
-try:
-    from .audio.s42p_beat_analyzer import (
-        NODE_CLASS_MAPPINGS        as _BEAT_CM,
-        NODE_DISPLAY_NAME_MAPPINGS as _BEAT_DN,
-    )
-    NODE_CLASS_MAPPINGS.update(_BEAT_CM)
-    NODE_DISPLAY_NAME_MAPPINGS.update(_BEAT_DN)
-    print("  ✅ S42P Beat Analyzer loaded")
-except Exception as e:
-    print(f"  ⚠️  S42P Beat Analyzer failed to load: {e}")
-    print("       → Check librosa (recommended): pip install librosa")
+# ── Video / animation nodes ───────────────────────────────────────────────────
+_video_nodes = [
+    ("video.s42p_keyframe_animator", "S42P Keyframe Animator", "Requires Pillow (included with ComfyUI)"),
+    ("video.s42p_transition",        "S42P Transition",        "Requires Pillow (included with ComfyUI)"),
+    ("video.s42p_video_tools",       "S42P Video Tools",       "Requires torch (included with ComfyUI)"),
+    ("video.s42p_color_grade",       "S42P Color Grade",       "Requires numpy (included with ComfyUI)"),
+]
 
-# ── Startup summary ───────────────────────────────────────────────────────────
-total = len(NODE_CLASS_MAPPINGS)
-print(f"\n{'='*60}")
-print(f"  S42 Production Suite v1.0.0 — {total} node(s) loaded")
-print(f"  Category: 'S42 Production Suite' in ComfyUI node menu")
-if total < 4:
-    print(f"  ⚠️  {4 - total} node(s) failed — check console output above")
-print(f"{'='*60}\n")
+for mod_path, label, fix in _video_nodes:
+    try:
+        import importlib
+        mod = importlib.import_module(f".{mod_path}", package=__name__)
+        NODE_CLASS_MAPPINGS.update(mod.NODE_CLASS_MAPPINGS)
+        NODE_DISPLAY_NAME_MAPPINGS.update(mod.NODE_DISPLAY_NAME_MAPPINGS)
+        print(f"  OK {label}")
+    except Exception as e:
+        print(f"  !! {label} FAILED: {e}")
+        print(f"       -> {fix}")
+
+# ── Summary ───────────────────────────────────────────────────────────────────
+total    = len(NODE_CLASS_MAPPINGS)
+expected = 8
+print("-"*60)
+print(f"  {'All nodes loaded' if total == expected else str(expected-total)+' node(s) failed'}"
+      f" — {total}/{expected} active")
+print(f"  Find nodes under 'S42 Production Suite' in the node menu")
+print("="*60 + "\n")
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
