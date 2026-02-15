@@ -1,0 +1,38 @@
+# S42 Production Suite — Dependencies
+# =====================================
+# Install into ComfyUI Portable (Windows):
+#   .\python_embeded\python.exe -m pip install -r requirements.txt
+#
+# Install into ComfyUI Portable (Linux/Mac):
+#   ./python_embeds/bin/python -m pip install -r requirements.txt
+#
+# Or from ComfyUI Manager terminal (any platform):
+#   pip install -r requirements.txt
+#
+# All packages below are lightweight CPU-only DSP libraries.
+# They do NOT claim GPU VRAM — your RTX 4090 stays free for Wan/Qwen.
+
+# ── REQUIRED ────────────────────────────────────────────────────────────────
+# Core DSP: filtering, resampling, signal analysis
+scipy>=1.11.0
+
+# Numerical processing (already in ComfyUI, listed for completeness)
+numpy>=1.24.0
+
+# ── STRONGLY RECOMMENDED ────────────────────────────────────────────────────
+# EBU R128 / ITU-R BS.1770 LUFS measurement (Mastering Chain)
+# Pure Python, lightweight, no native libs
+pyloudnorm>=0.1.1
+
+# Beat/tempo detection, onset detection, key/chroma analysis (Beat Analyzer)
+# Includes audioread, soundfile — all pure Python + numpy
+librosa>=0.10.0
+
+# ── ALREADY IN COMFYUI (no action needed) ───────────────────────────────────
+# torch        — included with ComfyUI
+# torchaudio   — included with ComfyUI
+# Pillow       — included with ComfyUI
+
+# ── OPTIONAL: better audio I/O ───────────────────────────────────────────────
+# soundfile>=0.12.1   # usually pulled in by librosa
+# audioread>=3.0.0    # usually pulled in by librosa
