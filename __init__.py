@@ -1,88 +1,115 @@
 """
-S42 Production Suite for ComfyUI
-=================================
-Professional audio mastering, 2D animation, video editing, and color grading.
+S42 Production Suite — Node Registration
+==========================================
+Flat-file layout compatible with GitHub web upload (no subdirectories).
+All node files are expected in the same directory as this __init__.py.
 
-Repo structure: all node files are in the root directory (flat layout).
-Uses spec_from_file_location() — no sys.path manipulation, no relative imports.
-Safe for concurrent loading alongside other custom nodes.
+AUDIO NODES (8 original + 4 new = 9 audio total):
+  s42p_eq_node            → S42P Parametric EQ
+  s42p_dynamics_node      → S42P Dynamics Processor
+  s42p_mastering_node     → S42P Mastering Chain
+  s42p_beat_analyzer      → S42P Beat Analyzer
+  s42p_audio_analyser     → S42P Audio Analyser      [NEW v2.1]
+  s42p_audio_visualizer   → S42P Audio Visualizer    [NEW v2.1]
+  s42p_latent_enhancer    → S42P Latent Enhancer     [NEW v2.1]
+  s42p_songwriter         → S42P Songwriter          [NEW v2.1]
+  s42p_eq_presets         → S42P EQ Preset Loader    [NEW v2.1]
 
-Version: 2.0.3 | Python 3.12 | ComfyUI Portable
+VIDEO NODES (4):
+  s42p_keyframe_animator  → S42P Keyframe Animator
+  s42p_transition         → S42P Transition
+  s42p_video_tools        → S42P Video Tools
+  s42p_color_grade        → S42P Color Grade
+
+UTILITIES (loaded into sys.modules, not exposed as nodes):
+  s42p_audio_utils        → audio DSP helpers shared by audio nodes
+  s42p_video_utils        → video DSP helpers shared by video nodes
+
+Version: 2.1.0
+Python:  3.12
+Layout:  flat (all .py files in repo root, compatible with GitHub web upload)
 """
 
 import sys
 import os
 import importlib.util
+import traceback
+import logging
+
+logger = logging.getLogger(__name__)
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
+
+def _load_module(filename, module_name):
+    """
+    Load a .py file from the same directory as __init__.py into sys.modules.
+    Uses spec_from_file_location — zero sys.path manipulation, safe for
+    concurrent loading alongside other custom node suites.
+    """
+    path = os.path.join(_HERE, filename)
+    if not os.path.isfile(path):
+        logger.warning(f"[S42P Suite] Missing file, skipping: {filename}")
+        return None
+    try:
+        spec   = importlib.util.spec_from_file_location(module_name, path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        spec.loader.exec_module(module)
+        return module
+    except Exception as e:
+        logger.error(f"[S42P Suite] Failed to load {filename}: {e}")
+        logger.debug(traceback.format_exc())
+        return None
+
+
+# Pre-load shared utility modules so audio/video nodes can import them
+_load_module("s42p_audio_utils.py", "s42p_audio_utils")
+_load_module("s42p_video_utils.py", "s42p_video_utils")
+
+
+_NODE_FILES = [
+    # filename,                 module_name,             label
+    ("s42p_eq_node.py",          "s42p_eq_node",          "Parametric EQ"),
+    ("s42p_dynamics_node.py",    "s42p_dynamics_node",    "Dynamics Processor"),
+    ("s42p_mastering_node.py",   "s42p_mastering_node",   "Mastering Chain"),
+    ("s42p_beat_analyzer.py",    "s42p_beat_analyzer",    "Beat Analyzer"),
+    ("s42p_audio_analyser.py",   "s42p_audio_analyser",   "Audio Analyser"),
+    ("s42p_audio_visualizer.py", "s42p_audio_visualizer", "Audio Visualizer"),
+    ("s42p_latent_enhancer.py",  "s42p_latent_enhancer",  "Latent Enhancer"),
+    ("s42p_songwriter.py",       "s42p_songwriter",       "Songwriter"),
+    ("s42p_eq_presets.py",       "s42p_eq_presets",       "EQ Preset Loader"),
+    ("s42p_keyframe_animator.py","s42p_keyframe_animator","Keyframe Animator"),
+    ("s42p_transition.py",       "s42p_transition",       "Transition"),
+    ("s42p_video_tools.py",      "s42p_video_tools",      "Video Tools"),
+    ("s42p_color_grade.py",      "s42p_color_grade",      "Color Grade"),
+]
+
 NODE_CLASS_MAPPINGS        = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
+_loaded = []
+_failed = []
 
-print("\n" + "="*60)
-print("  S42 Production Suite v2.0.3 — Loading...")
-print("="*60)
+for _fname, _modname, _label in _NODE_FILES:
+    _mod = _load_module(_fname, _modname)
+    if _mod is None:
+        _failed.append(_label)
+        continue
+    _cm = getattr(_mod, "NODE_CLASS_MAPPINGS",        {})
+    _dm = getattr(_mod, "NODE_DISPLAY_NAME_MAPPINGS", {})
+    if not _cm:
+        logger.warning(f"[S42P Suite] {_fname} exports no NODE_CLASS_MAPPINGS")
+        _failed.append(_label)
+        continue
+    NODE_CLASS_MAPPINGS.update(_cm)
+    NODE_DISPLAY_NAME_MAPPINGS.update(_dm)
+    _loaded.append(_label)
 
-
-def _load(label: str, filename: str, fix_hint: str) -> bool:
-    """Load a node file from the repo root by absolute path."""
-    filepath = os.path.join(_HERE, filename)
-    if not os.path.isfile(filepath):
-        print(f"  !! {label} FAILED: file not found — {filepath}")
-        return False
-    try:
-        mod_name = "s42prod_" + os.path.splitext(filename)[0]
-        spec     = importlib.util.spec_from_file_location(mod_name, filepath)
-        mod      = importlib.util.module_from_spec(spec)
-        sys.modules[mod_name] = mod
-        spec.loader.exec_module(mod)
-        NODE_CLASS_MAPPINGS.update(getattr(mod, "NODE_CLASS_MAPPINGS", {}))
-        NODE_DISPLAY_NAME_MAPPINGS.update(getattr(mod, "NODE_DISPLAY_NAME_MAPPINGS", {}))
-        print(f"  OK {label}")
-        return True
-    except Exception as e:
-        print(f"  !! {label} FAILED: {e}")
-        print(f"       -> {fix_hint}")
-        return False
-
-
-def _preload(mod_name: str, filename: str) -> None:
-    """Pre-load a shared utility into sys.modules so node files can import it."""
-    filepath = os.path.join(_HERE, filename)
-    if not os.path.isfile(filepath) or mod_name in sys.modules:
-        return
-    try:
-        spec = importlib.util.spec_from_file_location(mod_name, filepath)
-        mod  = importlib.util.module_from_spec(spec)
-        sys.modules[mod_name] = mod
-        spec.loader.exec_module(mod)
-    except Exception as e:
-        print(f"  !! Pre-load failed for {mod_name}: {e}")
-
-
-# ── Pre-load shared utilities ─────────────────────────────────────────────────
-_preload("s42p_audio_utils", "s42p_audio_utils.py")
-_preload("s42p_video_utils", "s42p_video_utils.py")
-
-# ── Audio nodes ───────────────────────────────────────────────────────────────
-_load("S42P Parametric EQ",      "s42p_eq_node.py",       "pip install scipy")
-_load("S42P Dynamics Processor", "s42p_dynamics_node.py", "pip install scipy")
-_load("S42P Mastering Chain",    "s42p_mastering_node.py","pip install pyloudnorm")
-_load("S42P Beat Analyzer",      "s42p_beat_analyzer.py", "pip install librosa")
-
-# ── Video / animation nodes ───────────────────────────────────────────────────
-_load("S42P Keyframe Animator",  "s42p_keyframe_animator.py", "Requires Pillow (included with ComfyUI)")
-_load("S42P Transition",         "s42p_transition.py",        "Requires Pillow (included with ComfyUI)")
-_load("S42P Video Tools",        "s42p_video_tools.py",       "Requires torch (included with ComfyUI)")
-_load("S42P Color Grade",        "s42p_color_grade.py",       "Requires numpy (included with ComfyUI)")
-
-# ── Summary ───────────────────────────────────────────────────────────────────
-_total    = len(NODE_CLASS_MAPPINGS)
-_expected = 8
-print("-"*60)
-print(f"  {'All nodes loaded' if _total == _expected else str(_expected - _total) + ' node(s) failed'}"
-      f" — {_total}/{_expected} active")
-print(f"  Find nodes under 'S42 Production Suite' in the node menu")
-print("="*60 + "\n")
+print(f"\n{'─'*60}")
+print(f"  S42 Production Suite  v2.1.0")
+print(f"  Nodes loaded ({len(_loaded)}): {', '.join(_loaded)}")
+if _failed:
+    print(f"  FAILED ({len(_failed)}): {', '.join(_failed)}  ← check log above")
+print(f"{'─'*60}\n")
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
