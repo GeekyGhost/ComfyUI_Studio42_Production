@@ -19,6 +19,20 @@ from typing import Tuple, Optional
 
 logger = logging.getLogger(__name__)
 
+
+class _NumpyEncoder(json.JSONEncoder):
+    """JSON encoder that converts numpy scalars/arrays to native Python types."""
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, (np.floating, np.float32, np.float64)):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, np.bool_):
+            return bool(obj)
+        return super().default(obj)
+
 try:
     import scipy.signal as sig
     SCIPY_AVAILABLE = True
@@ -96,7 +110,8 @@ def _compute_gain_reduction(
             env[i] = rel_coeff * env[i-1]
 
     # Convert envelope to dB
-    env_db = np.where(env > 1e-10, 20.0 * np.log10(env), -120.0).astype(np.float32)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        env_db = np.where(env > 1e-10, 20.0 * np.log10(np.maximum(env, 1e-10)), -120.0).astype(np.float32)
     thresh = float(threshold_db)
     knee_h = float(knee_db) * 0.5
     gain_db = np.zeros_like(env_db)
@@ -416,7 +431,7 @@ class S42PDynamicsProcessor:
             "sidechain_active": sc_arr is not None,
         }
 
-        return (audio_to_comfy(out, sr), json.dumps(info, indent=2))
+        return (audio_to_comfy(out, sr), json.dumps(info, indent=2, cls=_NumpyEncoder))
 
 
 # ── ComfyUI registration ──────────────────────────────────────────────────────

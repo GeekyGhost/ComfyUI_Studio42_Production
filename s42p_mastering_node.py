@@ -26,6 +26,20 @@ from typing import Tuple, Optional
 
 logger = logging.getLogger(__name__)
 
+
+class _NumpyEncoder(json.JSONEncoder):
+    """JSON encoder that converts numpy scalars/arrays to native Python types."""
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, (np.floating, np.float32, np.float64)):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, np.bool_):
+            return bool(obj)
+        return super().default(obj)
+
 try:
     import scipy.signal as scipy_sig
     SCIPY_AVAILABLE = True
@@ -364,7 +378,7 @@ class S42PMasteringChain:
                 "Temporarily set stereo_width=0.0 to hear the mono sum."
             )
 
-        return (audio_to_comfy(arr, sr), json.dumps(report, indent=2))
+        return (audio_to_comfy(arr, sr), json.dumps(report, indent=2, cls=_NumpyEncoder))
 
 
 # ── ComfyUI registration ──────────────────────────────────────────────────────

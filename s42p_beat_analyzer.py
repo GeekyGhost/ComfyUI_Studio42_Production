@@ -35,6 +35,20 @@ from typing import Tuple, Optional
 
 import torch
 
+
+class _NumpyEncoder(json.JSONEncoder):
+    """JSON encoder that converts numpy scalars/arrays to native Python types."""
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, (np.floating, np.float32, np.float64)):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, np.bool_):
+            return bool(obj)
+        return super().default(obj)
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -452,7 +466,7 @@ class S42PBeatAnalyzer:
             }
         }
 
-        beat_json = json.dumps(beat_data, indent=2)
+        beat_json = json.dumps(beat_data, indent=2, cls=_NumpyEncoder)
 
         # ── Render visualization ──────────────────────────────────────────────
         viz_np  = _render_beat_visualization(

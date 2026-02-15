@@ -13,9 +13,23 @@ Python 3.12 | ComfyUI Portable | scipy required
 import numpy as np
 import logging
 import json
-from typing import Tuple
+from typing import Optional, Tuple
 
 logger = logging.getLogger(__name__)
+
+
+class _NumpyEncoder(json.JSONEncoder):
+    """JSON encoder that converts numpy scalars/arrays to native Python types."""
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, (np.floating, np.float32, np.float64)):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, np.bool_):
+            return bool(obj)
+        return super().default(obj)
 
 try:
     import scipy.signal as sig
@@ -281,7 +295,7 @@ class S42PParametricEQ:
             "output_rms_db":  float(f"{rms_db(arr):.2f}"),
         }
 
-        return (audio_to_comfy(arr, sr), json.dumps(info, indent=2))
+        return (audio_to_comfy(arr, sr), json.dumps(info, indent=2, cls=_NumpyEncoder))
 
     # ── helpers ───────────────────────────────────────────────────────────────
 
