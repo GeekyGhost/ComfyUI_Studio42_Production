@@ -1,32 +1,55 @@
-# S42 Production Suite — Dependencies
-# =====================================
+# S42 Production Suite — Dependencies v3.0
+# ==========================================
+#
 # Install into ComfyUI Portable (Windows):
 #   .\python_embeded\python.exe -m pip install -r requirements.txt
 #
 # Install into ComfyUI Portable (Linux/Mac):
 #   ./python_embeds/bin/python -m pip install -r requirements.txt
 #
-# Or from ComfyUI Manager terminal (any platform):
+# Or from ComfyUI Manager terminal:
 #   pip install -r requirements.txt
 #
-# All packages below are lightweight CPU-only DSP libraries.
-# They do NOT claim GPU VRAM — your RTX 4090 stays free for Wan/Qwen.
+# All DSP runs on CPU — your GPU stays free for generation.
 
 # ── REQUIRED ────────────────────────────────────────────────────────────────
-# Core DSP: filtering, resampling, signal analysis
+# Core signal processing (filtering, resampling, FFT)
 scipy>=1.11.0
 
-# Numerical processing (already in ComfyUI, listed for completeness)
+# Numerical (already in ComfyUI, listed for completeness)
 numpy>=1.24.0
 
+# OpenCV — required for Background Remover, Audio Reactive FX, Layer Composer
+# ComfyUI does NOT bundle this — must install manually
+opencv-python>=4.8.0
+
 # ── STRONGLY RECOMMENDED ────────────────────────────────────────────────────
-# EBU R128 / ITU-R BS.1770 LUFS measurement (Mastering Chain)
-# Pure Python, lightweight, no native libs
+# EBU R128 / ITU-R BS.1770 LUFS measurement (Mastering Chain, Audio Analyser)
+# Pure Python, lightweight
 pyloudnorm>=0.1.1
 
-# Beat/tempo detection, onset detection, key/chroma analysis (Beat Analyzer)
-# Includes audioread, soundfile — all pure Python + numpy
+# Beat/tempo/onset detection, key analysis (Beat Analyzer, Audio Analyser,
+# Audio Reactive FX internal analysis)
 librosa>=0.10.0
+
+# ── AI BACKGROUND REMOVAL (optional but recommended) ────────────────────────
+# Required for BiRefNet, BEN2, U2Net, ISNet, SILUETA methods:
+#   pip install rembg onnxruntime
+#
+# For GPU acceleration of rembg:
+#   pip install onnxruntime-gpu
+#
+# rembg>=2.0.50
+# onnxruntime>=1.16.0
+#
+# For BiRefNet via Transformers (highest quality):
+#   pip install transformers torchvision
+#
+# For BEN2 via HuggingFace:
+#   pip install ben2
+#
+# Without any of these, Background Remover falls back to
+# Chroma Key / Luma Key which need only OpenCV.
 
 # ── ALREADY IN COMFYUI (no action needed) ───────────────────────────────────
 # torch        — included with ComfyUI
@@ -34,5 +57,10 @@ librosa>=0.10.0
 # Pillow       — included with ComfyUI
 
 # ── OPTIONAL: better audio I/O ───────────────────────────────────────────────
-# soundfile>=0.12.1   # usually pulled in by librosa
-# audioread>=3.0.0    # usually pulled in by librosa
+# soundfile>=0.12.1   # pulled in by librosa
+# audioread>=3.0.0    # pulled in by librosa
+
+# ── CHANGELOG ────────────────────────────────────────────────────────────────
+# v3.0  Added: opencv-python (Layer Composer, BG Remover, Audio Reactive FX)
+# v2.1  Added: pyloudnorm, librosa
+# v1.0  Initial: scipy, numpy

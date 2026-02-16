@@ -1,36 +1,37 @@
 """
-S42 Production Suite — EQ Preset Loader
-=========================================
-Outputs a named EQ preset as a JSON string that can feed into the
-S42P Parametric EQ node's preset_json optional input, or be read by
-any downstream node via ShowText.
+S42 Production Suite — EQ Preset Loader v2.0
+=============================================
+HOW TO CONNECT:
+  preset_json (STRING) → S42P Parametric EQ → optional input "preset_json"
+  The Parametric EQ node reads this JSON and auto-applies all band settings.
 
-Also provides individual dB outputs for each frequency band so presets
-can drive external EQ nodes or be used in other workflows.
+  If you only want to inspect values, wire individual dB outputs to ShowText.
 
-PRESET LIBRARY (adapted from ULM eq_presets.py):
-  flat              — Neutral pass-through
-  vocal_clarity     — Enhance vocal presence and intelligibility
-  warm_bass         — Add warmth and fullness to bass-heavy content
-  bright_crisp      — Add sparkle and air for a modern sound
-  radio_voice       — Classic broadcast vocal tone
-  telephone         — Lo-fi telephone/vintage band-limited sound
-  de_muddy          — Remove muddiness and boxiness
-  mastering_gentle  — Subtle mastering-style spectral shaping
-  bass_cut_vocal    — Remove low-end for cleaner vocal mix
-  smiley_curve      — Boost lows & highs, scoop mids (modern pop)
-  podcast_voice     — Optimised for spoken word clarity
-  lo_fi             — Warm, reduced-bandwidth vintage sound
-  sub_bass_focus    — Emphasise deep sub-bass frequencies
-  de_ess            — Reduce harsh sibilant frequencies
-  air_and_space     — Add openness and spatial quality
-  music_safe        — Safe starting point for AceStep music (no HP damage)
-  aceStep_balance   — Corrects typical AceStep spectral imbalance gently
+  ┌─────────────────────┐     ┌───────────────────────────────────────┐
+  │ S42P EQ Preset      │     │ S42P Parametric EQ                    │
+  │ Loader              │     │                                       │
+  │  preset_json ───────┼─────┼→ preset_json (optional)               │
+  │  (individual dBs)  │     │  (auto-applies all 8 bands from JSON) │
+  └─────────────────────┘     └───────────────────────────────────────┘
 
-HOW TO USE WITH S42P PARAMETRIC EQ:
-  Connect preset_json (STRING) output → S42P Parametric EQ optional preset_json input.
-  The EQ node reads this and applies band gains automatically.
-  Individual outputs can be read with ShowText for reference.
+PRESET LIBRARY:
+  flat              – Neutral pass-through
+  vocal_clarity     – Enhance vocal presence and intelligibility
+  warm_bass         – Add warmth and fullness to bass-heavy content
+  bright_crisp      – Add sparkle and air for a modern sound
+  radio_voice       – Classic broadcast vocal tone
+  telephone         – Lo-fi telephone/vintage band-limited sound
+  de_muddy          – Remove muddiness and boxiness
+  mastering_gentle  – Subtle mastering-style spectral shaping
+  bass_cut_vocal    – Remove low-end for cleaner vocal mix
+  smiley_curve      – Boost lows & highs, scoop mids (modern pop)
+  podcast_voice     – Optimised for spoken word clarity
+  lo_fi             – Warm, reduced-bandwidth vintage sound
+  sub_bass_focus    – Emphasise deep sub-bass frequencies
+  de_ess            – Reduce harsh sibilant frequencies
+  air_and_space     – Add openness and spatial quality
+  music_safe        – Safe AceStep starting point (no HP damage)
+  aceStep_balance   – Corrects typical AceStep spectral imbalance gently
 
 Python 3.12 | ComfyUI Portable
 """
@@ -40,20 +41,20 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-CATEGORY = "S42 Production Suite 🎛️ Audio"
+CATEGORY = "S42 Production Suite 🎛️ Audio Mastering"
 
 
-# ── Preset library ────────────────────────────────────────────────────────────
-# All values in dB. Band definitions match S42P Parametric EQ band layout:
-#   sub_bass  = 20-80Hz    (EQ band b1 low_shelf region)
-#   bass      = 80-300Hz   (EQ band b2 low_shelf)
-#   lo_mid    = 300-1kHz   (EQ band b3 peak)
-#   mid       = 1-3kHz     (EQ band b4 peak)
-#   hi_mid    = 3-8kHz     (EQ band b5 peak)
-#   presence  = 5-10kHz    (EQ band b6 peak / presence)
-#   brilliance = 8-20kHz   (EQ band b7 high_shelf)
-#   hp_hz     = high-pass cutoff frequency (0 = off)
-#   lp_hz     = low-pass cutoff (0 = off / 20000 = full range)
+# ── Preset library ────────────────────────────────────────────────────────
+# Band layout mirrors S42P Parametric EQ:
+#   sub_bass  20-80 Hz   (b1 – high-pass / low-shelf region)
+#   bass      80-300 Hz  (b2 – low shelf)
+#   lo_mid    300 Hz-1k  (b3 – peak)
+#   mid       1-3 kHz    (b4 – peak)
+#   hi_mid    3-8 kHz    (b5 – peak)
+#   presence  5-10 kHz   (b6 – peak / presence)
+#   brilliance 8-20 kHz  (b7 – high shelf)
+#   hp_hz     high-pass cutoff (0 = disabled)
+#   lp_hz     low-pass  cutoff (0 = disabled / full-range)
 
 EQ_PRESETS = {
     "flat": {
@@ -67,8 +68,7 @@ EQ_PRESETS = {
         "name": "Music Safe (AceStep)",
         "description": (
             "Conservative starting point for AceStep music. "
-            "No sub-bass cut (preserves the 58-77% sub energy typical of AceStep). "
-            "Gentle high shelf to add air without harshness."
+            "No sub-bass cut. Gentle high shelf adds air without harshness."
         ),
         "sub_bass": 0.0, "bass": 0.0, "lo_mid": -0.5, "mid": 0.5,
         "hi_mid": 1.0, "presence": 1.5, "brilliance": 1.5,
@@ -78,8 +78,8 @@ EQ_PRESETS = {
         "name": "AceStep Spectral Balance",
         "description": (
             "Corrects typical AceStep sub-dominance (58-77% sub energy). "
-            "Gentle sub cut + mild bass/mid lift to re-balance the spectrum. "
-            "Use AFTER checking S42P Audio Analyser — only apply if sub >55%."
+            "Gentle sub cut + mild bass/mid lift. "
+            "Only apply if S42P Audio Analyser reports sub >55%."
         ),
         "sub_bass": -2.5, "bass": 1.0, "lo_mid": 1.5, "mid": 1.0,
         "hi_mid": 1.5, "presence": 2.0, "brilliance": 1.5,
@@ -188,19 +188,27 @@ EQ_PRESETS = {
 PRESET_KEYS = list(EQ_PRESETS.keys())
 
 
-# ── ComfyUI Node ──────────────────────────────────────────────────────────────
+# ── ComfyUI Node ──────────────────────────────────────────────────────────
 
 class S42PEQPresetLoader:
     """
-    S42P EQ Preset Loader — select a named EQ preset and output its
-    band gain values as individual floats and a JSON string.
+    S42P EQ Preset Loader — select a named EQ preset and output values
+    ready to wire into S42P Parametric EQ.
 
-    The preset_json STRING output can be wired into the S42P Parametric EQ
-    optional preset_json input to auto-apply all band settings at once.
-    Individual dB outputs let you inspect or route specific band values.
+    CONNECTION GUIDE:
+      ─ Quickest way:
+          preset_json (STRING) → S42P Parametric EQ → optional "preset_json" input
+          This applies all band values automatically.
 
-    Includes AceStep-specific presets that account for the typical
-    sub-bass dominance (58-77%) of AceStep 1.5 generated audio.
+      ─ Manual band control:
+          Wire individual sub_bass_db / bass_db / … outputs
+          to ShowText nodes to inspect values, then type them
+          into the EQ node's band controls manually.
+
+      ─ Audio passthrough:
+          Connect audio_in to get a passthrough AUDIO output.
+          Useful to keep the signal chain clean without breaking
+          the audio wire between the preset loader and EQ.
     """
 
     @classmethod
@@ -210,38 +218,47 @@ class S42PEQPresetLoader:
                 "preset": (PRESET_KEYS, {
                     "default": "music_safe",
                     "tooltip": (
-                        "Select an EQ preset. "
-                        "'music_safe' and 'aceStep_balance' are designed specifically "
-                        "for AceStep 1.5 output. All others are genre/use-case presets."
+                        "'music_safe' and 'aceStep_balance' are designed for AceStep 1.5. "
+                        "Connect preset_json → S42P Parametric EQ optional preset_json input."
                     )
                 }),
                 "gain_trim_db": ("FLOAT", {
                     "default": 0.0, "min": -12.0, "max": 12.0, "step": 0.5,
                     "tooltip": (
-                        "Global gain trim applied to ALL bands uniformly. "
-                        "Use to scale the preset effect up or down without editing individual bands."
+                        "Global gain trim applied uniformly to all non-zero bands. "
+                        "Scales preset intensity up or down."
+                    )
+                }),
+            },
+            "optional": {
+                "audio_in": ("AUDIO", {
+                    "tooltip": (
+                        "Optional audio passthrough. Connect here to route audio "
+                        "alongside the preset_json without breaking the signal chain."
                     )
                 }),
             }
         }
 
-    RETURN_TYPES  = ("STRING", "STRING", "FLOAT", "FLOAT", "FLOAT",
-                     "FLOAT",  "FLOAT",  "FLOAT", "FLOAT")
+    RETURN_TYPES  = ("STRING", "STRING",
+                     "FLOAT",  "FLOAT",  "FLOAT",  "FLOAT",
+                     "FLOAT",  "FLOAT",  "FLOAT",
+                     "AUDIO")
     RETURN_NAMES  = ("preset_json", "preset_name",
                      "sub_bass_db", "bass_db", "lo_mid_db", "mid_db",
-                     "hi_mid_db", "presence_db", "brilliance_db")
+                     "hi_mid_db",   "presence_db", "brilliance_db",
+                     "audio_out")
     FUNCTION      = "load_preset"
     CATEGORY      = CATEGORY
     OUTPUT_NODE   = True
 
-    def load_preset(self, preset: str, gain_trim_db: float) -> tuple:
+    def load_preset(self, preset: str, gain_trim_db: float,
+                    audio_in: dict = None) -> tuple:
         p = EQ_PRESETS.get(preset, EQ_PRESETS["flat"])
 
         def _trim(v: float) -> float:
-            """Apply gain trim — zero trim = no change."""
             if abs(gain_trim_db) < 0.01 or abs(v) < 0.01:
                 return v
-            # Scale non-zero bands by trim ratio (additive in dB domain)
             return v + gain_trim_db * (1.0 if v >= 0 else -1.0) * min(1.0, abs(v) / 6.0)
 
         sub_bass   = round(_trim(p["sub_bass"]),   2)
@@ -277,11 +294,16 @@ class S42PEQPresetLoader:
               f"mid={mid:+.1f} hi_mid={hi_mid:+.1f} "
               f"presence={presence:+.1f} brilliance={brilliance:+.1f} dB")
 
+        # Pass audio through unchanged (or return None if not connected)
+        audio_out = audio_in
+
         return (preset_json, p["name"],
-                sub_bass, bass, lo_mid, mid, hi_mid, presence, brilliance)
+                sub_bass, bass, lo_mid, mid, hi_mid, presence, brilliance,
+                audio_out)
 
     @classmethod
-    def IS_CHANGED(cls, preset: str, gain_trim_db: float) -> str:
+    def IS_CHANGED(cls, preset: str, gain_trim_db: float,
+                   audio_in=None) -> str:
         return f"{preset}_{gain_trim_db}"
 
 
