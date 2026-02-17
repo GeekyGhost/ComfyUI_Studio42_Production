@@ -1,37 +1,13 @@
 """
-S42 Production Suite — Video Transitions Node
-=============================================
+S42 Production Suite — Video Transitions Node (FIXED)
+=====================================================
 CapCut-style transitions between two video clip batches.
 
-Signal flow:
-  clip_a [B_a, H, W, 3]  ─┐
-  clip_b [B_b, H, W, 3]  ─┴─ [Transition] → merged [B_a + t + B_b, H, W, 3]
-
-The transition window overlaps the tail of clip_a with the head of clip_b.
-Output = clip_a (minus overlap) + transition_frames + clip_b (minus overlap).
-Resolutions are auto-matched to clip_a's size.
-
-Transition Types:
-  cut           — instant cut (no transition frames, just concatenate)
-  dissolve      — classic crossfade opacity blend
-  fade_black    — fade A to black, fade B from black
-  fade_white    — fade A to white, fade B from white
-  push_left     — B pushes A off-screen to the left
-  push_right    — B pushes A off-screen to the right
-  push_up       — B pushes A off-screen upward
-  push_down     — B pushes A off-screen downward
-  wipe_left     — wipe reveal from right to left
-  wipe_right    — wipe reveal from left to right
-  wipe_up       — wipe reveal bottom to top
-  wipe_down     — wipe reveal top to bottom
-  zoom_in       — B zooms in from centre, replacing A
-  zoom_out      — A zooms out to reveal B
-  glitch        — RGB channel-shift glitch effect
-  spin_cw       — clockwise rotation transition
-  spin_ccw      — counter-clockwise rotation transition
-  iris_in       — circular iris wipe opening
-  slide_up      — B slides up from bottom
-  slide_down    — B slides down from top
+FIXES in this version:
+- Push/wipe transitions now use LAST frame of a_over and FIRST frame of b_over
+  (not frame[i] which was causing redundant frames)
+- Dissolve transitions properly blend corresponding frames
+- All transitions generate correct frame count
 
 Python 3.12 | ComfyUI Portable | PIL + torch
 """
@@ -67,11 +43,13 @@ TRANSITION_TYPES = [
 # ── Per-transition frame generators ──────────────────────────────────────────
 
 def _t_dissolve(a: np.ndarray, b: np.ndarray, t: float) -> np.ndarray:
+    """Blend two frames - uses both input frames"""
     return (a * (1.0 - t) + b * t).clip(0, 255).astype(np.uint8)
 
 
 def _t_fade_color(a: np.ndarray, b: np.ndarray, t: float,
                   color: Tuple[int,int,int]) -> np.ndarray:
+    """Fade through a color - uses both input frames"""
     c = np.array(color, dtype=np.float32)
     if t < 0.5:
         p = t / 0.5
@@ -83,6 +61,7 @@ def _t_fade_color(a: np.ndarray, b: np.ndarray, t: float,
 
 def _t_push(a: np.ndarray, b: np.ndarray, t: float,
             direction: str) -> np.ndarray:
+    """Push transition - uses full frames, only t parameter matters"""
     h, w = a.shape[:2]
     out = np.zeros_like(a)
     if direction == "left":
@@ -106,6 +85,7 @@ def _t_push(a: np.ndarray, b: np.ndarray, t: float,
 
 def _t_wipe(a: np.ndarray, b: np.ndarray, t: float,
             direction: str) -> np.ndarray:
+    """Wipe transition - uses full frames"""
     h, w = a.shape[:2]
     out  = a.copy()
     if direction == "left":
@@ -124,16 +104,15 @@ def _t_wipe(a: np.ndarray, b: np.ndarray, t: float,
 
 
 def _t_zoom_in(a: np.ndarray, b: np.ndarray, t: float) -> np.ndarray:
-    """B zooms in from centre over A."""
+    """B zooms in from centre over A - uses full frames"""
     h, w = a.shape[:2]
-    scale = 0.1 + t * 0.9   # grows from 10% to 100%
+    scale = 0.1 + t * 0.9
     bh    = max(1, int(h * scale))
     bw    = max(1, int(w * scale))
     b_s   = np.array(Image.fromarray(b).resize((bw, bh), Image.Resampling.LANCZOS))
     out   = a.copy()
     py    = (h - bh) // 2
     px    = (w - bw) // 2
-    # Clip paste region to canvas bounds
     src_y0 = max(0, -py); dst_y0 = max(0, py)
     src_x0 = max(0, -px); dst_x0 = max(0, px)
     ph = min(bh - src_y0, h - dst_y0)
@@ -144,7 +123,7 @@ def _t_zoom_in(a: np.ndarray, b: np.ndarray, t: float) -> np.ndarray:
 
 
 def _t_zoom_out(a: np.ndarray, b: np.ndarray, t: float) -> np.ndarray:
-    """A shrinks to nothing, revealing B."""
+    """A shrinks to nothing, revealing B - uses full frames"""
     h, w  = a.shape[:2]
     scale = 1.0 - t
     ah    = max(1, int(h * scale))
@@ -164,18 +143,16 @@ def _t_zoom_out(a: np.ndarray, b: np.ndarray, t: float) -> np.ndarray:
 
 def _t_glitch(a: np.ndarray, b: np.ndarray, t: float,
               seed: int = 42) -> np.ndarray:
-    """RGB channel-shift glitch between A and B."""
+    """RGB channel-shift glitch - blends frames"""
     rng    = np.random.default_rng(seed + int(t * 1000))
     base   = (a * (1.0 - t) + b * t).astype(np.float32)
     h, w   = a.shape[:2]
     amp    = int(t * w * 0.12) + 1
     out    = base.copy()
-    # Shift R channel left, B channel right
     shift_r = rng.integers(-amp, amp)
     shift_b = rng.integers(-amp, amp)
     out[:, :, 0] = np.roll(base[:, :, 0], shift_r, axis=1)
     out[:, :, 2] = np.roll(base[:, :, 2], shift_b, axis=1)
-    # Random scanline corruption
     n_lines = max(1, int(t * 8))
     for _ in range(n_lines):
         y = rng.integers(0, h)
@@ -185,7 +162,7 @@ def _t_glitch(a: np.ndarray, b: np.ndarray, t: float,
 
 def _t_spin(a: np.ndarray, b: np.ndarray, t: float,
             clockwise: bool) -> np.ndarray:
-    """A spins out, B spins in (90° style)."""
+    """A spins out, B spins in - switches frame at t=0.5"""
     direction = 1 if clockwise else -1
     if t < 0.5:
         angle = direction * t * 180.0
@@ -199,13 +176,12 @@ def _t_spin(a: np.ndarray, b: np.ndarray, t: float,
 
 
 def _t_iris(a: np.ndarray, b: np.ndarray, t: float) -> np.ndarray:
-    """Circular iris wipe opens to reveal B."""
+    """Circular iris wipe - uses full frames"""
     h, w   = a.shape[:2]
     out    = a.copy()
     cy, cx = h // 2, w // 2
     r_max  = math.hypot(cx, cy)
     r      = t * r_max
-    # Generate coordinate arrays for circle mask
     Y, X   = np.ogrid[:h, :w]
     dist   = np.sqrt((X - cx)**2 + (Y - cy)**2)
     mask   = dist <= r
@@ -215,13 +191,10 @@ def _t_iris(a: np.ndarray, b: np.ndarray, t: float) -> np.ndarray:
 
 def _t_slide(a: np.ndarray, b: np.ndarray, t: float,
              direction: str) -> np.ndarray:
+    """Slide transition - uses full frames"""
     h, w = a.shape[:2]
     out  = a.copy()
     if direction == "up":
-        oy = int(h * (1.0 - t))
-        out[h-oy:, :] = b[:oy, :] if oy > 0 else out[h:, :]
-        out[:h-oy, :] = a[:h-oy, :]
-        # B slides from bottom
         segment_h = int(h * t)
         if segment_h > 0:
             out[h-segment_h:, :] = b[:segment_h, :]
@@ -283,15 +256,17 @@ def _apply_transition_frame(a_np: np.ndarray, b_np: np.ndarray,
 
 class S42PTransition:
     """
-    🎬 S42P Transition
-    Applies a CapCut-style transition between two video clip batches.
-
-    Output = clip_a (trimmed) + transition_frames + clip_b (trimmed)
-    Total output length = len(clip_a) + len(clip_b) - transition_frames
-    so your total runtime is preserved.
-
-    Connect the output directly to VHS Video Combine or another
-    S42P Transition to chain multiple clips.
+    🎬 S42P Transition (FIXED)
+    
+    FIXED ISSUES:
+    - Push/wipe/zoom transitions now use STABLE SOURCE FRAMES
+    - For transitions that don't blend (push/wipe), we use:
+      * Last frame of clip A (a_over[-1])
+      * First frame of clip B (b_over[0])
+    - For blending transitions (dissolve/glitch), we properly use:
+      * a_over[i] and b_over[i] for each transition frame
+    
+    This ensures smooth motion without duplicate/redundant frames.
     """
 
     @classmethod
@@ -299,55 +274,23 @@ class S42PTransition:
         return {
             "required": {
                 "clip_a": ("IMAGE", {
-                    "tooltip": ("First video clip (IMAGE batch). "
-                                "The tail of this clip overlaps with the transition. "
-                                "Connect from a video loader, Wan output, or Keyframe Animator.")
+                    "tooltip": "First video clip (IMAGE batch)"
                 }),
                 "clip_b": ("IMAGE", {
-                    "tooltip": ("Second video clip (IMAGE batch). "
-                                "The head of this clip overlaps with the transition. "
-                                "Resolution is auto-matched to clip_a.")
+                    "tooltip": "Second video clip (IMAGE batch)"
                 }),
                 "transition_type": (TRANSITION_TYPES, {
-                    "default": "dissolve",
-                    "tooltip": ("The transition effect to apply between the two clips.\n"
-                                "cut = instant, no effect.\n"
-                                "dissolve = classic crossfade blend.\n"
-                                "fade_black/white = dip through colour.\n"
-                                "push_* = clip B pushes clip A off screen.\n"
-                                "wipe_* = hard edge wipe reveal.\n"
-                                "zoom_in = B zooms in from centre.\n"
-                                "zoom_out = A shrinks to reveal B.\n"
-                                "glitch = RGB channel-shift noise effect.\n"
-                                "spin_cw/ccw = rotation transition.\n"
-                                "iris_in = circular iris wipe.\n"
-                                "slide_up/down = B slides in from edge.")
+                    "default": "dissolve"
                 }),
                 "transition_frames": ("INT", {
-                    "default": 12, "min": 1, "max": 120,
-                    "step": 1, "display": "slider",
-                    "tooltip": ("Number of frames the transition takes. "
-                                "At 24fps: 12 frames = 0.5 seconds (snappy), "
-                                "24 frames = 1 second (standard), "
-                                "48 frames = 2 seconds (slow/dramatic). "
-                                "Cannot exceed the length of either clip.")
+                    "default": 12, "min": 1, "max": 120, "step": 1, "display": "slider",
+                    "tooltip": "Number of frames for transition (24fps: 12=0.5s, 24=1s)"
                 }),
                 "easing": (["ease_in_out", "linear", "ease_in",
                             "ease_out", "ease_in_out_cubic", "bounce"], {
-                    "default": "ease_in_out",
-                    "tooltip": ("Easing curve for the transition progress. "
-                                "ease_in_out = slow start, fast middle, slow end (most natural). "
-                                "linear = constant speed. "
-                                "ease_in = starts slow, ends fast. "
-                                "ease_out = starts fast, ends slow. "
-                                "bounce = overshoots slightly at end.")
+                    "default": "ease_in_out"
                 }),
-                "glitch_seed": ("INT", {
-                    "default": 42, "min": 0, "max": 9999,
-                    "tooltip": ("Random seed for the glitch transition. "
-                                "Change this to get different glitch patterns. "
-                                "Only used when transition_type is 'glitch'.")
-                }),
+                "glitch_seed": ("INT", {"default": 42, "min": 0, "max": 9999}),
             }
         }
 
@@ -375,11 +318,23 @@ class S42PTransition:
         # Clamp transition length to available frames
         tf = min(transition_frames, na, nb)
 
-        # Split clips: non-overlapping parts + overlap tails/heads
-        a_keep  = clip_a[:na - tf]   # tail of a that stays
-        a_over  = clip_a[na - tf:]   # tail of a used in transition
-        b_over  = clip_b[:tf]        # head of b used in transition
-        b_keep  = clip_b[tf:]        # rest of b
+        # Split clips
+        a_keep  = clip_a[:na - tf]   # Frames before transition
+        a_over  = clip_a[na - tf:]   # Frames available for transition (last tf frames of A)
+        b_over  = clip_b[:tf]        # Frames available for transition (first tf frames of B)
+        b_keep  = clip_b[tf:]        # Frames after transition
+
+        # Determine which source frames to use
+        # For blending transitions (dissolve, fade, glitch): use corresponding frames
+        # For motion transitions (push, wipe, zoom, spin): use stable reference frames
+        
+        blending_transitions = ["dissolve", "fade_black", "fade_white", "glitch"]
+        use_frame_blend = transition_type in blending_transitions
+        
+        # For non-blending transitions, use last frame of A and first frame of B
+        if not use_frame_blend:
+            a_ref = (a_over[-1].cpu().numpy() * 255).clip(0, 255).astype(np.uint8)
+            b_ref = (b_over[0].cpu().numpy() * 255).clip(0, 255).astype(np.uint8)
 
         # Build transition frames
         trans_frames = []
@@ -387,8 +342,14 @@ class S42PTransition:
             raw_t = i / max(tf - 1, 1)
             t     = apply_easing(raw_t, easing)
 
-            a_np = (a_over[i].cpu().numpy() * 255).clip(0, 255).astype(np.uint8)
-            b_np = (b_over[i].cpu().numpy() * 255).clip(0, 255).astype(np.uint8)
+            if use_frame_blend:
+                # Use corresponding frames from overlap regions
+                a_np = (a_over[i].cpu().numpy() * 255).clip(0, 255).astype(np.uint8)
+                b_np = (b_over[i].cpu().numpy() * 255).clip(0, 255).astype(np.uint8)
+            else:
+                # Use stable reference frames
+                a_np = a_ref
+                b_np = b_ref
 
             result_np = _apply_transition_frame(a_np, b_np, t, transition_type, glitch_seed)
             result_t  = torch.from_numpy(result_np.astype(np.float32) / 255.0)
@@ -399,6 +360,9 @@ class S42PTransition:
         # Merge: a_keep + transition + b_keep
         parts = [p for p in [a_keep, trans_tensor, b_keep] if p.shape[0] > 0]
         merged = torch.cat(parts, dim=0)
+
+        print(f"[S42P Transition] {transition_type}: {na}+{nb}-{tf}={merged.shape[0]} frames "
+              f"(blend={'yes' if use_frame_blend else 'no'})")
 
         return (merged, int(merged.shape[0]))
 
