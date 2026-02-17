@@ -1,27 +1,27 @@
 """
-S42 Production Suite — Beat Analyzer Node
+S42 Production Suite â€” Beat Analyzer Node
 ==========================================
 BPM detection, beat grid, onset/transient detection, and key/scale analysis.
 
 Outputs:
-  AUDIO     — passthrough (chain inline without breaking graph)
-  STRING    — JSON beat data compatible with LatentSync / Wan S2V timing
-  IMAGE     — waveform + beat grid visualization (preview in ComfyUI)
+  AUDIO     â€” passthrough (chain inline without breaking graph)
+  STRING    â€” JSON beat data compatible with LatentSync / Wan S2V timing
+  IMAGE     â€” waveform + beat grid visualization (preview in ComfyUI)
 
 Beat data JSON schema (for downstream node compatibility):
 {
   "bpm":            float,
-  "bpm_confidence": float (0.0–1.0),
+  "bpm_confidence": float (0.0â€“1.0),
   "time_signature": int (beats per bar, estimated),
-  "beat_times":     [float, ...],   ← seconds
-  "bar_times":      [float, ...],   ← seconds
-  "onset_times":    [float, ...],   ← transient onset seconds
-  "key":            str,            ← e.g. "C major"
+  "beat_times":     [float, ...],   â† seconds
+  "bar_times":      [float, ...],   â† seconds
+  "onset_times":    [float, ...],   â† transient onset seconds
+  "key":            str,            â† e.g. "C major"
   "key_confidence": float,
   "duration_sec":   float,
   "sample_rate":    int,
   "total_beats":    int,
-  "frames_at_bpm":  dict            ← {fps: [frame_numbers]} for video sync
+  "frames_at_bpm":  dict            â† {fps: [frame_numbers]} for video sync
 }
 
 Python 3.12 | ComfyUI Portable
@@ -56,7 +56,7 @@ try:
     LIBROSA_AVAILABLE = True
 except ImportError:
     LIBROSA_AVAILABLE = False
-    logger.warning("librosa not available — beat detection will use basic autocorrelation fallback")
+    logger.warning("librosa not available â€” beat detection will use basic autocorrelation fallback")
 
 try:
     from PIL import Image, ImageDraw, ImageFont
@@ -68,10 +68,10 @@ from s42p_audio_utils import (
     audio_from_comfy, audio_to_comfy, ensure_stereo, ensure_float32
 )
 
-CATEGORY = "S42 Production Suite 📊 Audio Analysis"
+CATEGORY = "S42 Production Suite ðŸ“Š Audio Analysis"
 
 
-# ── Fallback BPM via autocorrelation ─────────────────────────────────────────
+# ”€”€ Fallback BPM via autocorrelation ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _bpm_autocorrelation(mono: np.ndarray, sr: int) -> Tuple[float, float]:
     """
@@ -99,7 +99,7 @@ def _bpm_autocorrelation(mono: np.ndarray, sr: int) -> Tuple[float, float]:
     ac = np.correlate(energy, energy, mode="full")
     ac = ac[len(ac)//2:]    # keep positive lags only
 
-    # Search BPM range 60–200
+    # Search BPM range 60€“200
     fps_e    = sr_eff / hop
     lag_min  = int(60.0 / 200.0 * fps_e)
     lag_max  = int(60.0 / 60.0  * fps_e)
@@ -124,12 +124,12 @@ def _beats_from_bpm(bpm: float, duration: float) -> np.ndarray:
     return np.arange(0.0, duration, beat_interval)
 
 
-# ── Key detection ─────────────────────────────────────────────────────────────
+# ”€”€ Key detection ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _detect_key(mono: np.ndarray, sr: int) -> Tuple[str, float]:
     """
     Krumhansl-Schmuckler key-finding algorithm using chroma features.
-    Returns (key_string, confidence 0–1).
+    Returns (key_string, confidence 0â€“1).
     """
     if not LIBROSA_AVAILABLE:
         return "Unknown", 0.0
@@ -163,7 +163,7 @@ def _detect_key(mono: np.ndarray, sr: int) -> Tuple[str, float]:
         all_keys.sort(key=lambda x: x[1], reverse=True)
         best_key, best_corr = all_keys[0]
 
-        # Normalise confidence to 0–1 range (correlations are -1 to 1)
+        # Normalise confidence to 0€“1 range (correlations are -1 to 1)
         confidence = (best_corr + 1.0) / 2.0
 
         return best_key, round(confidence, 3)
@@ -173,7 +173,7 @@ def _detect_key(mono: np.ndarray, sr: int) -> Tuple[str, float]:
         return "Unknown", 0.0
 
 
-# ── Visualization ─────────────────────────────────────────────────────────────
+# ”€”€ Visualization ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _render_beat_visualization(mono: np.ndarray, sr: int,
                                 beat_times: np.ndarray,
@@ -195,7 +195,7 @@ def _render_beat_visualization(mono: np.ndarray, sr: int,
     duration = len(mono) / sr
     center_y = height // 2
 
-    # ── Draw waveform ─────────────────────────────────────────────────────────
+    # ”€”€ Draw waveform ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
     # Downsample to pixel width
     step    = max(1, len(mono) // width)
     samples = mono[::step][:width]
@@ -210,25 +210,25 @@ def _render_beat_visualization(mono: np.ndarray, sr: int,
             y_bot = int(center_y - amp * (center_y - 10))
         draw.line([(x, y_top), (x, y_bot)], fill=(60, 140, 200))
 
-    # ── Draw bar lines (orange, thick) ────────────────────────────────────────
+    # ”€”€ Draw bar lines (orange, thick) ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
     for t in bar_times:
         x = int(t / duration * width)
         if 0 <= x < width:
             draw.line([(x, 0), (x, height)], fill=(255, 153, 0), width=2)
 
-    # ── Draw beat lines (yellow, thin) ────────────────────────────────────────
+    # ”€”€ Draw beat lines (yellow, thin) ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
     for t in beat_times:
         x = int(t / duration * width)
         if 0 <= x < width:
             draw.line([(x, center_y - 20), (x, center_y + 20)], fill=(220, 220, 80), width=1)
 
-    # ── Draw onset markers (red triangles at top) ─────────────────────────────
+    # ”€”€ Draw onset markers (red triangles at top) ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
     for t in onset_times[:500]:   # cap at 500 to avoid perf issues
         x = int(t / duration * width)
         if 0 <= x < width:
             draw.polygon([(x, 4), (x-4, 14), (x+4, 14)], fill=(220, 60, 60))
 
-    # ── Info text bar at bottom ───────────────────────────────────────────────
+    # ”€”€ Info text bar at bottom ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
     info_y = height - 28
     draw.rectangle([(0, info_y), (width, height)], fill=(20, 20, 30))
     try:
@@ -241,7 +241,7 @@ def _render_beat_visualization(mono: np.ndarray, sr: int,
                 f"Onsets: {len(onset_times)}  |  Duration: {duration:.1f}s")
     draw.text((8, info_y + 6), info_str, fill=(200, 200, 200), font=font)
 
-    # ── Legend ────────────────────────────────────────────────────────────────
+    # ”€”€ Legend ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
     legend_items = [
         ((255, 153,  0), "Bar"),
         ((220, 220, 80), "Beat"),
@@ -257,14 +257,14 @@ def _render_beat_visualization(mono: np.ndarray, sr: int,
     return arr_rgb   # [H, W, 3]
 
 
-# ── Node ─────────────────────────────────────────────────────────────────────
+# ”€”€ Node ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 class S42PBeatAnalyzer:
     """
-    🥁 S42P Beat Analyzer
+    ðŸ¥ S42P Beat Analyzer
     Analyzes audio for BPM, beat grid, onsets, and musical key.
 
-    Pass audio through this node inline — it doesn't modify the signal.
+    Pass audio through this node inline â€” it doesn't modify the signal.
     Use the JSON output to drive beat-synced video cuts with Wan S2V
     or LatentSync timing, or load it into the future S42P Video Sequencer.
     The visualization image shows you the waveform with beat/bar markers
@@ -277,7 +277,7 @@ class S42PBeatAnalyzer:
             "required": {
                 "audio": ("AUDIO", {
                     "tooltip": ("Input audio to analyze. "
-                                "The audio passes through unchanged — this node only reads it. "
+                                "The audio passes through unchanged â€” this node only reads it. "
                                 "Chain it between your mastering nodes and your video/export nodes.")
                 }),
                 "analysis_channel": (["mixed_mono", "left", "right"], {
@@ -290,7 +290,7 @@ class S42PBeatAnalyzer:
                     "default": 60.0, "min": 30.0, "max": 200.0,
                     "step": 1.0, "display": "slider",
                     "tooltip": ("Minimum BPM to search for. "
-                                "60 BPM = slow ballad. 90–140 = pop/hip-hop. 140–180 = EDM/drum & bass. "
+                                "60 BPM = slow ballad. 90â€“140 = pop/hip-hop. 140â€“180 = EDM/drum & bass. "
                                 "Narrowing the range improves detection accuracy.")
                 }),
                 "bpm_max": ("FLOAT", {
@@ -302,7 +302,7 @@ class S42PBeatAnalyzer:
                 }),
                 "beats_per_bar": (["auto", "2", "3", "4", "6"], {
                     "default": "auto",
-                    "tooltip": ("Time signature numerator — beats per bar. "
+                    "tooltip": ("Time signature numerator â€” beats per bar. "
                                 "auto = estimate from beat grid. "
                                 "4 = common time (pop, rock, hip-hop). "
                                 "3 = waltz. 6 = compound time. "
@@ -314,7 +314,7 @@ class S42PBeatAnalyzer:
                     "tooltip": ("Sensitivity for transient/onset detection. "
                                 "Lower = only catch strong transients (kick, snare). "
                                 "Higher = catch more subtle onsets (hi-hats, guitar picks). "
-                                "0.3–0.5 works well for drums. 0.6–0.8 for melodic content.")
+                                "0.3â€“0.5 works well for drums. 0.6â€“0.8 for melodic content.")
                 }),
                 "detect_key": ("BOOLEAN", {
                     "default": True,
@@ -341,7 +341,7 @@ class S42PBeatAnalyzer:
                     "default": 360, "min": 120, "max": 720,
                     "step": 8, "display": "slider",
                     "tooltip": ("Height of the output visualization image in pixels. "
-                                "360 is compact for preview. 480–720 for more waveform detail.")
+                                "360 is compact for preview. 480â€“720 for more waveform detail.")
                 }),
             }
         }
@@ -361,7 +361,7 @@ class S42PBeatAnalyzer:
         arr     = ensure_stereo(ensure_float32(arr))
         duration = arr.shape[1] / sr
 
-        # ── Extract mono analysis channel ─────────────────────────────────────
+        # ”€”€ Extract mono analysis channel ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
         if analysis_channel == "left":
             mono = arr[0]
         elif analysis_channel == "right":
@@ -369,7 +369,7 @@ class S42PBeatAnalyzer:
         else:
             mono = np.mean(arr, axis=0)
 
-        # ── BPM + Beat Detection ──────────────────────────────────────────────
+        # ”€”€ BPM + Beat Detection ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
         bpm         = 120.0
         bpm_conf    = 0.5
         beat_times  = np.array([])
@@ -405,7 +405,7 @@ class S42PBeatAnalyzer:
             bpm, bpm_conf = _bpm_autocorrelation(mono, sr)
             beat_times    = _beats_from_bpm(bpm, duration)
 
-        # ── Onset Detection ───────────────────────────────────────────────────
+        # ”€”€ Onset Detection ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
         onset_times = np.array([])
         if LIBROSA_AVAILABLE:
             try:
@@ -418,7 +418,7 @@ class S42PBeatAnalyzer:
             except Exception as e:
                 logger.warning(f"Onset detection failed: {e}")
 
-        # ── Bar Times ─────────────────────────────────────────────────────────
+        # ”€”€ Bar Times ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
         if beats_per_bar == "auto":
             bpb = 4   # default, most music is 4/4
         else:
@@ -426,12 +426,12 @@ class S42PBeatAnalyzer:
 
         bar_times = beat_times[::bpb] if len(beat_times) > 0 else np.array([])
 
-        # ── Key Detection ─────────────────────────────────────────────────────
+        # ”€”€ Key Detection ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
         key_str, key_conf = ("Unknown", 0.0)
         if detect_key:
             key_str, key_conf = _detect_key(mono, sr)
 
-        # ── Frame numbers per FPS ─────────────────────────────────────────────
+        # ”€”€ Frame numbers per FPS ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
         frames_at_bpm = {}
         try:
             for fps_str in video_fps_list.split(","):
@@ -444,7 +444,7 @@ class S42PBeatAnalyzer:
         except Exception as e:
             logger.warning(f"FPS frame calculation failed: {e}")
 
-        # ── Build JSON output ─────────────────────────────────────────────────
+        # ”€”€ Build JSON output ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
         beat_data = {
             "bpm":             round(float(bpm), 2),
             "bpm_confidence":  round(float(bpm_conf), 3),
@@ -468,24 +468,24 @@ class S42PBeatAnalyzer:
 
         beat_json = json.dumps(beat_data, indent=2, cls=_NumpyEncoder)
 
-        # ── Render visualization ──────────────────────────────────────────────
+        # ”€”€ Render visualization ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
         viz_np  = _render_beat_visualization(
             mono, sr, beat_times, bar_times, onset_times,
             bpm=float(bpm), key=key_str,
             width=viz_width, height=viz_height
         )
-        # ComfyUI IMAGE: torch [B, H, W, C] float32 0–1
+        # ComfyUI IMAGE: torch [B, H, W, C] float32 0€“1
         viz_tensor = torch.from_numpy(viz_np).unsqueeze(0)
 
         return (audio_to_comfy(arr, sr), beat_json, viz_tensor)
 
 
-# ── ComfyUI registration ──────────────────────────────────────────────────────
+# ”€”€ ComfyUI registration ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 NODE_CLASS_MAPPINGS = {
     "S42PBeatAnalyzer": S42PBeatAnalyzer,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "S42PBeatAnalyzer": "🥁 S42P Beat Analyzer",
+    "S42PBeatAnalyzer": "ðŸ¥ S42P Beat Analyzer",
 }

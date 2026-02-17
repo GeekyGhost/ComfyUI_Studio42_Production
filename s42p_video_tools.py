@@ -1,13 +1,13 @@
 """
-S42 Production Suite — Video Tools Node
+S42 Production Suite â€” Video Tools Node
 ========================================
 Multi-function video utility node. Mode selector at top drives behaviour.
 
 Modes:
-  trim        — cut a clip to in/out points (frame or second based)
-  concatenate — join up to 6 clips in sequence (auto-matches resolution)
-  reverse     — reverse frame order
-  fps_convert — convert frame rate (duplicate or blend modes)
+  trim        â€” cut a clip to in/out points (frame or second based)
+  concatenate â€” join up to 6 clips in sequence (auto-matches resolution)
+  reverse     â€” reverse frame order
+  fps_convert â€” convert frame rate (duplicate or blend modes)
 
 All operations work on standard ComfyUI IMAGE batches [B, H, W, C].
 Output is an IMAGE batch ready for VHS Video Combine or further nodes.
@@ -27,34 +27,34 @@ from s42p_video_utils import (
 
 logger = logging.getLogger(__name__)
 
-CATEGORY = "S42 Production Suite 🎬 Animation"
+CATEGORY = "S42 Production Suite ðŸŽ¬ Animation"
 
 MODES = ["trim", "concatenate", "reverse", "fps_convert"]
 
 
 class S42PVideoTools:
     """
-    🛠️ S42P Video Tools
+    ðŸ› ï¸ S42P Video Tools
     Multi-purpose video utility node.
-    Select a mode at the top — only the relevant controls apply.
+    Select a mode at the top â€” only the relevant controls apply.
 
     Modes:
-    ──────────────────────────────────────────────────
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     trim        Cut a clip to specific in/out points.
                 Specify by frame number or by seconds.
 
     concatenate Join up to 6 clips in sequence.
                 Resolutions are auto-matched to clip_a.
-                Connect clips in order — gaps (unconnected) are skipped.
+                Connect clips in order â€” gaps (unconnected) are skipped.
 
     reverse     Flip the clip so last frame plays first.
                 Useful for ping-pong loops or creative effects.
 
     fps_convert Change the playback frame rate.
-                Wan generates at ~8fps — convert to 24/30fps for smooth playback.
+                Wan generates at ~8fps â€” convert to 24/30fps for smooth playback.
                 'blend' mode interpolates between frames for smooth motion.
                 'duplicate' mode is faster but can look jittery.
-    ──────────────────────────────────────────────────
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     """
 
     @classmethod
@@ -74,7 +74,7 @@ class S42PVideoTools:
                                 "fps_convert = change frame rate.")
                 }),
 
-                # ── Trim controls ─────────────────────────────────────────────
+                # ”€”€ Trim controls ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
                 "trim_unit": (["frames", "seconds"], {
                     "default": "frames",
                     "tooltip": ("Whether in_point and out_point are in frame numbers or seconds. "
@@ -99,7 +99,7 @@ class S42PVideoTools:
                                 "Only used in 'trim' mode.")
                 }),
 
-                # ── FPS controls ──────────────────────────────────────────────
+                # ”€”€ FPS controls ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
                 "source_fps": ("FLOAT", {
                     "default": 8.0, "min": 0.5, "max": 120.0,
                     "step": 0.5, "display": "slider",
@@ -173,16 +173,16 @@ class S42PVideoTools:
             info = f"Reversed {clip_a.shape[0]} frames."
         elif mode == "fps_convert":
             result = convert_fps(clip_a, source_fps, target_fps, fps_mode)
-            info   = (f"FPS convert: {source_fps}fps → {target_fps}fps | "
-                      f"{clip_a.shape[0]} frames → {result.shape[0]} frames | "
+            info   = (f"FPS convert: {source_fps}fps â†’ {target_fps}fps | "
+                      f"{clip_a.shape[0]} frames â†’ {result.shape[0]} frames | "
                       f"mode={fps_mode}")
         else:
             result = clip_a
-            info   = "Unknown mode — returning clip_a unchanged."
+            info   = "Unknown mode â€” returning clip_a unchanged."
 
         return (result, int(result.shape[0]), info)
 
-    # ── Trim ──────────────────────────────────────────────────────────────────
+    # ”€”€ Trim ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
     def _trim(self, clip: torch.Tensor, unit: str,
               in_pt: float, out_pt: float, fps: float) -> Tuple[torch.Tensor, str]:
@@ -199,11 +199,11 @@ class S42PVideoTools:
         out_frame = max(in_frame, min(out_frame, n - 1))
 
         result = clip[in_frame : out_frame + 1]
-        info   = (f"Trimmed: frames {in_frame}–{out_frame} of {n} | "
+        info   = (f"Trimmed: frames {in_frame}â€“{out_frame} of {n} | "
                   f"output = {result.shape[0]} frames")
         return result, info
 
-    # ── Concatenate ───────────────────────────────────────────────────────────
+    # ”€”€ Concatenate ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
     def _concatenate(self, clips: list) -> Tuple[torch.Tensor, str]:
         if not clips:
@@ -225,12 +225,12 @@ class S42PVideoTools:
         return merged, info
 
 
-# ── ComfyUI registration ──────────────────────────────────────────────────────
+# ”€”€ ComfyUI registration ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 NODE_CLASS_MAPPINGS = {
     "S42PVideoTools": S42PVideoTools,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "S42PVideoTools": "🛠️ S42P Video Tools",
+    "S42PVideoTools": "ðŸ› ï¸ S42P Video Tools",
 }

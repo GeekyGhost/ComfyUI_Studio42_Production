@@ -1,13 +1,13 @@
 """
-S42 Production Suite — Layer Composer v1.0
+S42 Production Suite â€” Layer Composer v1.0
 ============================================
 Multi-layer image/video compositing node.
 
 Ported from Studio42 24oiduts LayerComposer.
-Animation code removed — use S42P Keyframe Animator for transforms.
+Animation code removed â€” use S42P Keyframe Animator for transforms.
 
 COMPOSITION MODES:
-  Stacking:  bg → fx → fg  (background, effects layer, foreground)
+  Stacking:  bg â†’ fx â†’ fg  (background, effects layer, foreground)
   Each layer: IMAGE + optional MASK + blend_mode + opacity
 
 BLEND MODES:
@@ -15,24 +15,24 @@ BLEND MODES:
   dodge, burn, darken, lighten, difference, exclusion, add, subtract
 
 FEATURES:
-  • Per-layer opacity (0.0 – 1.0)
-  • Per-layer mask input (MASK type from Background Remover etc.)
-  • Output resolution control
-  • Batch-aware: processes all frames in sync
+  â€¢ Per-layer opacity (0.0 â€“ 1.0)
+  â€¢ Per-layer mask input (MASK type from Background Remover etc.)
+  â€¢ Output resolution control
+  â€¢ Batch-aware: processes all frames in sync
 
 INPUT LAYOUT:
-  bg_image       — bottom background layer  (IMAGE)
-  bg_mask        — optional mask for bg     (MASK)
-  fx_image       — middle effects layer     (IMAGE, e.g. Visualizer/Matrix Rain)
-  fx_mask        — optional mask for fx     (MASK)
-  fg_image       — top foreground layer     (IMAGE, e.g. background-removed subject)
-  fg_mask        — foreground alpha mask    (MASK, from BG Remover)
+  bg_image       â€” bottom background layer  (IMAGE)
+  bg_mask        â€” optional mask for bg     (MASK)
+  fx_image       â€” middle effects layer     (IMAGE, e.g. Visualizer/Matrix Rain)
+  fx_mask        â€” optional mask for fx     (MASK)
+  fg_image       â€” top foreground layer     (IMAGE, e.g. background-removed subject)
+  fg_mask        â€” foreground alpha mask    (MASK, from BG Remover)
 
-  Each layer can be None — just leave the input unconnected.
+  Each layer can be None â€” just leave the input unconnected.
 
 OUTPUT:
-  composited     — final IMAGE batch
-  alpha_mask     — composite alpha (MASK)
+  composited     â€” final IMAGE batch
+  alpha_mask     â€” composite alpha (MASK)
 
 Python 3.12 | ComfyUI Portable
 """
@@ -53,7 +53,7 @@ except ImportError:
     _HAS_CV2 = False
 
 
-# ── Blend mode implementations ────────────────────────────────────────────
+# ”€”€ Blend mode implementations ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _blend(base: np.ndarray, layer: np.ndarray, mode: str) -> np.ndarray:
     """Blend two float32 [H,W,3] arrays, return float32 [H,W,3]."""
@@ -110,7 +110,7 @@ def _composite_layer(canvas: np.ndarray, canvas_alpha: np.ndarray,
     return np.clip(out_rgb, 0, 1), np.clip(out_alpha, 0, 1)
 
 
-# ── Frame helpers ─────────────────────────────────────────────────────────
+# ”€”€ Frame helpers ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _get_frame(batch: Optional[torch.Tensor], idx: int,
                target_h: int, target_w: int) -> Optional[np.ndarray]:
@@ -156,7 +156,7 @@ def _get_mask(batch: Optional[torch.Tensor], idx: int,
     return np.clip(m, 0, 1)
 
 
-# ── Node ──────────────────────────────────────────────────────────────────
+# ”€”€ Node ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 BLEND_MODES = [
     "normal","multiply","screen","overlay","hard_light","soft_light",
@@ -164,15 +164,15 @@ BLEND_MODES = [
 ]
 
 class S42PLayerComposer:
-    """S42P Layer Composer — composite up to 3 layers (bg / fx / fg) for video and images.
+    """S42P Layer Composer €” composite up to 3 layers (bg / fx / fg) for video and images.
 
     Standard music video workflow:
-      bg_image  ← S42P Audio Visualizer or Matrix Rain (reactive background)
-      fx_image  ← S42P Procedural FX or other effects layer
-      fg_image  ← subject video (background removed with S42P Background Remover)
-      fg_mask   ← alpha mask from S42P Background Remover → result_mask
+      bg_image  â† S42P Audio Visualizer or Matrix Rain (reactive background)
+      fx_image  â† S42P Procedural FX or other effects layer
+      fg_image  â† subject video (background removed with S42P Background Remover)
+      fg_mask   â† alpha mask from S42P Background Remover â†’ result_mask
 
-    Also works for still images — batch size 1 in, batch size 1 out.
+    Also works for still images â€” batch size 1 in, batch size 1 out.
     """
 
     @classmethod
@@ -200,7 +200,7 @@ class S42PLayerComposer:
 
                 # Foreground layer (top)
                 "fg_image":      ("IMAGE",  {"tooltip": "Top foreground layer (subject video)."}),
-                "fg_mask":       ("MASK",   {"tooltip": "Alpha mask for fg — connect BG Remover result_mask here."}),
+                "fg_mask":       ("MASK",   {"tooltip": "Alpha mask for fg â€” connect BG Remover result_mask here."}),
                 "fg_opacity":    ("FLOAT",  {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "fg_blend_mode": (BLEND_MODES, {"default": "normal"}),
 
@@ -276,7 +276,7 @@ class S42PLayerComposer:
         composited = torch.stack(out_frames, dim=0)
         alpha_mask = torch.stack(out_alphas, dim=0)
 
-        print(f"[S42P Layer Composer] ✅ {N} frames  {W}x{H}  format={output_format}")
+        print(f"[S42P Layer Composer] âœ… {N} frames  {W}x{H}  format={output_format}")
         return (composited, alpha_mask)
 
     def _parse_hex(self, hex_str: str) -> tuple:
@@ -290,4 +290,4 @@ class S42PLayerComposer:
 
 
 NODE_CLASS_MAPPINGS        = {"S42PLayerComposer": S42PLayerComposer}
-NODE_DISPLAY_NAME_MAPPINGS = {"S42PLayerComposer": "S42P Layer Composer 🎬"}
+NODE_DISPLAY_NAME_MAPPINGS = {"S42PLayerComposer": "S42P Layer Composer ðŸŽ¬"}

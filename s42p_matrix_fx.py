@@ -1,5 +1,5 @@
 """
-S42 Production Suite — Matrix Rain FX v1.0
+S42 Production Suite â€” Matrix Rain FX v1.0
 ============================================
 Generates animated matrix-style binary rain frames (0s and 1s).
 
@@ -7,15 +7,15 @@ Outputs a batch of IMAGE frames you can pipe directly into VHS_VideoCombine,
 S42P Layer Composer, or any ComfyUI video/image batch node.
 
 OPTIONS:
-  width / height / fps / frame_count — output dimensions and timing
-  transparent_bg — RGBA output with black background removed (alpha channel)
-  audio — optional AUDIO to sync drop speed and intensity to music
-  char_size — pixel size of each character cell
-  drop_speed — columns fall rate (cells per second at idle)
-  density — fraction of columns active at once
-  glow — enable soft glow blur on characters
-  color_r/g/b — foreground character color (defaults to Matrix green)
-  head_color — leading character highlight color
+  width / height / fps / frame_count â€” output dimensions and timing
+  transparent_bg â€” RGBA output with black background removed (alpha channel)
+  audio â€” optional AUDIO to sync drop speed and intensity to music
+  char_size â€” pixel size of each character cell
+  drop_speed â€” columns fall rate (cells per second at idle)
+  density â€” fraction of columns active at once
+  glow â€” enable soft glow blur on characters
+  color_r/g/b â€” foreground character color (defaults to Matrix green)
+  head_color â€” leading character highlight color
 
 AUDIO REACTIVE:
   When audio connected, bass drives column speed and density.
@@ -48,7 +48,7 @@ except ImportError:
     _HAS_LIBROSA = False
 
 
-# ── Audio helper ──────────────────────────────────────────────────────────
+# ”€”€ Audio helper ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _to_numpy_mono(audio_any):
     y = None; sr = None
@@ -116,13 +116,13 @@ def _band_env(y, sr, frames, lo, hi):
         return np.zeros(frames, dtype=np.float32)
 
 
-# ── Matrix Rain Renderer ──────────────────────────────────────────────────
+# ”€”€ Matrix Rain Renderer ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 class _MatrixRenderer:
     """Stateful matrix rain column simulator."""
 
     BINARY_CHARS = "01"
-    EXTENDED_CHARS = "01アイウエオカキクケコサシスセソタチツテトナニヌネノ"
+    EXTENDED_CHARS = "01ã‚¢ã‚¤ã‚¦ã‚¨ã‚ªã‚«ã‚­ã‚¯ã‚±ã‚³ã‚µã‚·ã‚¹ã‚»ã‚½ã‚¿ãƒãƒ„ãƒ†ãƒˆãƒŠãƒ‹ãƒŒãƒãƒŽ"
 
     def __init__(self, width: int, height: int, char_size: int,
                  drop_speed: float, density: float, char_set: str = "binary"):
@@ -204,11 +204,11 @@ class _MatrixRenderer:
                 t = max(0.0, min(1.0, t))
 
                 if dist_from_head < 0.8:
-                    # Head character — bright highlight
+                    # Head character €” bright highlight
                     r, g, b = head_color
                     alpha = 255
                 else:
-                    # Trail character — fade
+                    # Trail character €” fade
                     r = int(fg_color[0] * t)
                     g = int(fg_color[1] * t)
                     b = int(fg_color[2] * t)
@@ -267,15 +267,15 @@ class _MatrixRenderer:
         return canvas
 
 
-# ── Node ──────────────────────────────────────────────────────────────────
+# ”€”€ Node ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 class S42PMatrixRainFX:
-    """S42P Matrix Rain FX — animated binary (0/1) rain effect.
+    """S42P Matrix Rain FX €” animated binary (0/1) rain effect.
 
     Generates a batch of animation frames. Pipe output to:
-    • VHS_VideoCombine — export as video
-    • S42P Layer Composer — composite over other video
-    • Any image batch node
+    â€¢ VHS_VideoCombine â€” export as video
+    â€¢ S42P Layer Composer â€” composite over other video
+    â€¢ Any image batch node
 
     Set transparent_bg=True for RGBA output (black background becomes alpha)
     so you can composite the rain over your own background.
@@ -293,7 +293,7 @@ class S42PMatrixRainFX:
             },
             "optional": {
                 "audio": ("AUDIO", {
-                    "tooltip": "Optional audio — syncs drop speed and density to bass energy."}),
+                    "tooltip": "Optional audio â€” syncs drop speed and density to bass energy."}),
 
                 "char_size": ("INT", {"default": 14, "min": 6, "max": 64, "step": 2,
                     "tooltip": "Character cell size in pixels. Larger = fewer, bolder characters."}),
@@ -313,7 +313,7 @@ class S42PMatrixRainFX:
                 "head_b":  ("INT", {"default": 180, "min": 0, "max": 255}),
 
                 "transparent_bg": ("BOOLEAN", {"default": False,
-                    "tooltip": "RGBA output — black background becomes transparent. "
+                    "tooltip": "RGBA output â€” black background becomes transparent. "
                                "Use with S42P Layer Composer for compositing."}),
                 "glow": ("BOOLEAN", {"default": True,
                     "tooltip": "Add subtle glow blur to characters."}),
@@ -388,4 +388,4 @@ class S42PMatrixRainFX:
 
 
 NODE_CLASS_MAPPINGS        = {"S42PMatrixRainFX": S42PMatrixRainFX}
-NODE_DISPLAY_NAME_MAPPINGS = {"S42PMatrixRainFX": "S42P Matrix Rain FX 🟩"}
+NODE_DISPLAY_NAME_MAPPINGS = {"S42PMatrixRainFX": "S42P Matrix Rain FX ðŸŸ©"}

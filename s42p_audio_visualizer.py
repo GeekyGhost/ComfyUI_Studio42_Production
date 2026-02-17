@@ -1,20 +1,20 @@
 """
-S42 Production Suite — Audio Visualizer v5.0
+S42 Production Suite â€” Audio Visualizer v5.0
 =============================================
 Multi-mode audio-reactive visualizer for music videos.
 
 MODES:
-  spectrum_classic  — bars + oscilloscope ring + particle burst (Winamp-inspired)
-  lava_lamp         — physics blobs that rise/fall, morph with music
-  wormhole          — true 3D tunnel perspective with depth-mapped rings
-  matrix            — falling character rain, columns pulse to bass
-  stargate          — expanding portal rings with energy tendrils
-  oscilloscope      — clean waveform scope with peak indicators
-  nebula            — fractal plasma cloud with beat explosions
-  aurora            — flowing northern-lights curtains over starfield
-  fractal_zoom      — mandelbrot-esque zoom driven by bass
-  dna_helix         — rotating 3D double helix synced to music
-  liquid_metal      — mercury/chrome fluid surface with beat ripples
+  spectrum_classic  â€” bars + oscilloscope ring + particle burst (Winamp-inspired)
+  lava_lamp         â€” physics blobs that rise/fall, morph with music
+  wormhole          â€” true 3D tunnel perspective with depth-mapped rings
+  matrix            â€” falling character rain, columns pulse to bass
+  stargate          â€” expanding portal rings with energy tendrils
+  oscilloscope      â€” clean waveform scope with peak indicators
+  nebula            â€” fractal plasma cloud with beat explosions
+  aurora            â€” flowing northern-lights curtains over starfield
+  fractal_zoom      â€” mandelbrot-esque zoom driven by bass
+  dna_helix         â€” rotating 3D double helix synced to music
+  liquid_metal      â€” mercury/chrome fluid surface with beat ripples
 
 Python 3.12 | ComfyUI Portable | Pillow + numpy (CPU, no VRAM)
 """
@@ -43,9 +43,9 @@ try:
 except ImportError:
     TORCH_AVAILABLE = False
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # Colour palettes
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 PALETTES = {
     "Spectrum Classic":  {"bg":(0,0,0),    "bar_low":(0,255,0),   "bar_mid":(255,255,0),
@@ -94,9 +94,9 @@ VIZ_MODES = [
     "fractal_zoom",     "dna_helix",  "liquid_metal",
 ]
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # Shared: energy extraction + wave chunk
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _extract_energy(audio_np: np.ndarray, sr: int, fps: float,
                     max_frames: int):
@@ -146,9 +146,9 @@ def _wave_chunk(audio_np: np.ndarray, sr: int, i: int, fps: float, n_frames: int
     return c if len(c) >= 2 else np.zeros(64, np.float32)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # Colour helpers
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _lerp(c1, c2, t):
     t = max(0., min(1., float(t)))
@@ -161,9 +161,9 @@ def _hsv(h, s, v):
     return (int(r*255), int(g*255), int(b*255))
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # MODE: SPECTRUM CLASSIC (Winamp-inspired, renamed)
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _spectrum_classic_frame(draw, w, h, bass, mid, high, beat, wave, fi, pal, bar_count, particles):
     step = max(8, w // 40); t = fi * 0.05
@@ -213,9 +213,9 @@ def _spectrum_classic_frame(draw, w, h, bass, mid, high, beat, wave, fi, pal, ba
     return new_p
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# MODE: LAVA LAMP — fixed: blobs travel full height, morph with music
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# MODE: LAVA LAMP €” fixed: blobs travel full height, morph with music
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _lava_frame(draw, w, h, bass, mid, high, beat, fi, pal, blobs):
     # Background gradient
@@ -224,7 +224,7 @@ def _lava_frame(draw, w, h, bass, mid, high, beat, fi, pal, blobs):
 
     rng = random.Random(fi * 31 + int(bass * 777))
 
-    # Spawn blobs — start below screen
+    # Spawn blobs €” start below screen
     if beat > 0.5 or len(blobs) < 5:
         for _ in range(2 if beat > 0.5 else 1):
             if len(blobs) < 25:
@@ -244,7 +244,7 @@ def _lava_frame(draw, w, h, bass, mid, high, beat, fi, pal, blobs):
     new_blobs = []
     for b in blobs:
         # Update physics
-        b["vy"] += 0.015         # gravity — slow drift back down
+        b["vy"] += 0.015         # gravity â€” slow drift back down
         b["vy"] -= bass * 0.5    # bass pushes up hard
         b["vy"]  = max(-3.5, min(1.2, b["vy"]))  # clamp velocity
         b["vx"] += math.sin(fi * 0.06 + b["phase"]) * 0.08 * mid
@@ -257,7 +257,7 @@ def _lava_frame(draw, w, h, bass, mid, high, beat, fi, pal, blobs):
         if b["x"] < b["r"]:      b["x"] = b["r"];    b["vx"] =  abs(b["vx"])
         if b["x"] > w - b["r"]:  b["x"] = w-b["r"];  b["vx"] = -abs(b["vx"])
 
-        # Morphing radius — pulses with bass and high
+        # Morphing radius €” pulses with bass and high
         wobble   = math.sin(fi * 0.18 + b["phase"]) * 0.18 * mid
         r_target = b["r_base"] * (1.0 + bass * 0.45 + high * 0.2 + wobble)
         b["r"]   = b["r"] * 0.85 + r_target * 0.15   # smooth lerp
@@ -292,9 +292,9 @@ def _lava_frame(draw, w, h, bass, mid, high, beat, fi, pal, blobs):
     return new_blobs
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# MODE: WORMHOLE — true 3D perspective tunnel
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# MODE: WORMHOLE €” true 3D perspective tunnel
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _wormhole_frame(draw, w, h, bass, mid, high, beat, fi, pal):
     cx, cy   = w / 2, h / 2
@@ -318,11 +318,11 @@ def _wormhole_frame(draw, w, h, bass, mid, high, beat, fi, pal):
     for ri in range(n_rings - 1, -1, -1):
         # z depth: 0 (far) to 1 (near) with speed offset
         z_norm = ((ri / n_rings) + (fi * speed * 0.01)) % 1.0
-        # Perspective: objects closer (z_norm→1) appear larger
+        # Perspective: objects closer (z_norm†’1) appear larger
         persp  = z_norm ** 1.8
         persp  = max(0.01, persp)
 
-        # Ring radius in 3D space — modulate with bass
+        # Ring radius in 3D space €” modulate with bass
         r3d    = 0.55 + bass * 0.2 * z_norm
         rx     = int(cx * r3d * persp * fov * (w / h))
         ry     = int(cy * r3d * persp * fov)
@@ -380,11 +380,11 @@ def _wormhole_frame(draw, w, h, bass, mid, high, beat, fi, pal):
     draw.ellipse([cx-3,cy-3,cx+3,cy+3], fill=(255,255,255))
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # MODE: MATRIX
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
-_MATRIX_CHARS = list("ｦｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ0123456789ABCDEF")
+_MATRIX_CHARS = list("ï½¦ï½±ï½²ï½³ï½´ï½µï½¶ï½·ï½¸ï½¹ï½ºï½»ï½¼ï½½ï½¾ï½¿ï¾€ï¾ï¾‚ï¾ƒï¾„ï¾…ï¾†ï¾‡ï¾ˆï¾‰ï¾Šï¾‹ï¾Œï¾ï¾Žï¾ï¾ï¾‘ï¾’ï¾“ï¾”ï¾•ï¾–ï¾—ï¾˜ï¾™ï¾šï¾›ï¾œï¾0123456789ABCDEF")
 
 def _matrix_frame(draw, w, h, bass, mid, high, beat, fi, pal, cols_state):
     char_w=14; char_h=18; n_cols=w//char_w
@@ -412,9 +412,9 @@ def _matrix_frame(draw, w, h, bass, mid, high, beat, fi, pal, cols_state):
     return cols_state
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # MODE: STARGATE
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _stargate_frame(draw, w, h, bass, mid, high, beat, fi, pal):
     cx,cy=w//2,h//2
@@ -441,9 +441,9 @@ def _stargate_frame(draw, w, h, bass, mid, high, beat, fi, pal):
     r2=r_core//2; draw.ellipse([cx-r2,cy-r2,cx+r2,cy+r2],fill=(255,255,255))
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # MODE: OSCILLOSCOPE
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _osc_frame(draw, w, h, bass, mid, high, beat, wave, fi, pal):
     draw.rectangle([0,0,w,h],fill=pal["bg"])
@@ -464,9 +464,9 @@ def _osc_frame(draw, w, h, bass, mid, high, beat, wave, fi, pal):
     draw.line([(0,h-py2),(w,h-py2)],fill=_lerp(pal["wave"],pal["bar_top"],.5),width=1)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # MODE: NEBULA
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _nebula_frame(draw, w, h, bass, mid, high, beat, fi, pal):
     t=fi*.04; step=max(6,w//50)
@@ -487,9 +487,9 @@ def _nebula_frame(draw, w, h, bass, mid, high, beat, fi, pal):
         draw.point((sx,sy),fill=(b2,b2,b2))
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# MODE: AURORA — northern lights curtains over star field
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# MODE: AURORA €” northern lights curtains over star field
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _aurora_frame(draw, w, h, bass, mid, high, beat, fi, pal):
     # Starfield
@@ -500,7 +500,7 @@ def _aurora_frame(draw, w, h, bass, mid, high, beat, fi, pal):
         lum=rng.randint(80,200); sr=0 if rng.random()>.8 else 1
         draw.ellipse([sx-sr,sy-sr,sx+sr,sy+sr],fill=(lum,lum,lum))
 
-    # Aurora curtains — vertical bands of colour drifting horizontally
+    # Aurora curtains €” vertical bands of colour drifting horizontally
     n_curtains=6
     for ci in range(n_curtains):
         base_x = (ci/n_curtains + fi*0.002 + ci*0.17) % 1.0
@@ -538,9 +538,9 @@ def _aurora_frame(draw, w, h, bass, mid, high, beat, fi, pal):
             draw.line([(0,y),(w,y)], fill=col)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# MODE: FRACTAL ZOOM — zooming complex plane driven by bass
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# MODE: FRACTAL ZOOM €” zooming complex plane driven by bass
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _fractal_zoom_frame(draw, w, h, bass, mid, high, beat, fi, pal):
     # Use a simple julia/mandelbrot-lite at low resolution, upscale
@@ -595,9 +595,9 @@ def _fractal_zoom_frame(draw, w, h, bass, mid, high, beat, fi, pal):
             draw.ellipse([cx2-r,cy2-r,cx2+r,cy2+r],outline=col,width=1)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# MODE: DNA HELIX — rotating 3D double helix
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# MODE: DNA HELIX €” rotating 3D double helix
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _dna_frame(draw, w, h, bass, mid, high, beat, fi, pal):
     draw.rectangle([0,0,w,h], fill=pal["bg"])
@@ -620,7 +620,7 @@ def _dna_frame(draw, w, h, bass, mid, high, beat, fi, pal):
         x_a = cx + math.cos(angle) * amplitude
         z_a = math.sin(angle)
 
-        # Strand B (180° offset)
+        # Strand B (180 offset)
         x_b = cx + math.cos(angle + math.pi) * amplitude
         z_b = math.sin(angle + math.pi)
 
@@ -664,9 +664,9 @@ def _dna_frame(draw, w, h, bass, mid, high, beat, fi, pal):
             prev = curr
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# MODE: LIQUID METAL — mercury surface with ripples
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# MODE: LIQUID METAL €” mercury surface with ripples
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _liquid_metal_frame(draw, w, h, bass, mid, high, beat, fi, pal):
     rw, rh = w // 4, h // 4
@@ -685,7 +685,7 @@ def _liquid_metal_frame(draw, w, h, bass, mid, high, beat, fi, pal):
               + math.sin(nx*ny*20 + t*2 + high) * 0.15
             )
 
-    # Beat ripple — add radial wave from centre
+    # Beat ripple €” add radial wave from centre
     if beat > 0.3:
         cx_n, cy_n = 0.5, 0.5
         for y in range(rh):
@@ -733,9 +733,9 @@ def _liquid_metal_frame(draw, w, h, bass, mid, high, beat, fi, pal):
                  outline=_hsv(hue_r, 0.3, 0.9 + high * 0.1), width=max(1,int(2+beat*3)))
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # Dispatch
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _render_frame(mode: str, w: int, h: int, bass: float, mid: float, high: float,
                   beat: float, wave: np.ndarray, fi: int, pal: dict,
@@ -790,26 +790,26 @@ def _render_frame(mode: str, w: int, h: int, bass: float, mid: float, high: floa
     return arr, state
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # ComfyUI Node
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 class S42PAudioVisualizer:
     """
-    S42P Audio Visualizer — 11 audio-reactive modes for music videos.
+    S42P Audio Visualizer â€” 11 audio-reactive modes for music videos.
 
     MODES:
-      spectrum_classic — bars + scope ring + particles (retro-inspired)
-      lava_lamp        — morphing physics blobs, full-screen travel
-      wormhole         — true 3D perspective tunnel with depth + twist
-      matrix           — falling character rain columns
-      stargate         — expanding portal rings + energy tendrils
-      oscilloscope     — clean waveform with peak indicators
-      nebula           — fractal plasma cloud with beat explosions
-      aurora           — northern lights curtains over starfield
-      fractal_zoom     — mandelbrot zoom accelerating with bass
-      dna_helix        — rotating 3D double helix with rungs
-      liquid_metal     — chrome/mercury surface with light + ripples
+      spectrum_classic â€” bars + scope ring + particles (retro-inspired)
+      lava_lamp        â€” morphing physics blobs, full-screen travel
+      wormhole         â€” true 3D perspective tunnel with depth + twist
+      matrix           â€” falling character rain columns
+      stargate         â€” expanding portal rings + energy tendrils
+      oscilloscope     â€” clean waveform with peak indicators
+      nebula           â€” fractal plasma cloud with beat explosions
+      aurora           â€” northern lights curtains over starfield
+      fractal_zoom     â€” mandelbrot zoom accelerating with bass
+      dna_helix        â€” rotating 3D double helix with rungs
+      liquid_metal     â€” chrome/mercury surface with light + ripples
 
     12 PALETTES: Spectrum Classic, Neon Synthwave, Lava Lamp, Void Blue,
     Matrix Green, Blood Moon, Arctic Ice, Deep Space, Sunset, Cyberpunk,
@@ -844,7 +844,7 @@ class S42PAudioVisualizer:
     RETURN_TYPES  = ("IMAGE",)
     RETURN_NAMES  = ("visualization",)
     FUNCTION      = "visualize"
-    CATEGORY      = "S42 Production Suite 🎨 Visualizer"
+    CATEGORY      = "S42 Production Suite ðŸŽ¨ Visualizer"
 
     def visualize(self, audio: dict, mode: str, fps: float, width: int,
                   height: int, palette: str, bar_count: int, max_frames: int,
@@ -897,10 +897,10 @@ class S42PAudioVisualizer:
 
         batch = np.stack(frames, axis=0).astype(np.float32)
         frames.clear(); gc.collect()
-        print(f"[S42P Visualizer] ✓ {n_frames} frames  {batch.nbytes/1024/1024:.1f}MB")
+        print(f"[S42P Visualizer] âœ“ {n_frames} frames  {batch.nbytes/1024/1024:.1f}MB")
 
         return (torch.from_numpy(batch) if TORCH_AVAILABLE else batch,)
 
 
 NODE_CLASS_MAPPINGS        = {"S42PAudioVisualizer": S42PAudioVisualizer}
-NODE_DISPLAY_NAME_MAPPINGS = {"S42PAudioVisualizer": "S42P Audio Visualizer 🎨"}
+NODE_DISPLAY_NAME_MAPPINGS = {"S42PAudioVisualizer": "S42P Audio Visualizer ðŸŽ¨"}

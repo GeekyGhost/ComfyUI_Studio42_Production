@@ -1,12 +1,12 @@
 """
-S42 Production Suite — Mastering Chain Node
+S42 Production Suite â€” Mastering Chain Node
 ============================================
 The final stage of audio mastering in one node.
 
 Signal flow:
-Input → [Stereo Width (M/S)] → [Harmonic Exciter] →
-        [LUFS Loudness Targeting] → [True Peak Limiter] →
-        [Dither + Noise Shape] → Output
+Input â†’ [Stereo Width (M/S)] â†’ [Harmonic Exciter] â†’
+        [LUFS Loudness Targeting] â†’ [True Peak Limiter] â†’
+        [Dither + Noise Shape] â†’ Output
 
 LUFS presets:
   Streaming (Spotify/Apple/YouTube): -14 LUFS integrated
@@ -54,31 +54,31 @@ from s42p_audio_utils import (
     measure_dynamic_range, PYLOUDNORM_AVAILABLE
 )
 
-CATEGORY = "S42 Production Suite 🎛️ Audio Mastering"
+CATEGORY = "S42 Production Suite ðŸŽ›ï¸ Audio Mastering"
 
-# ── LUFS presets ─────────────────────────────────────────────────────────────
+# ”€”€ LUFS presets ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 LUFS_PRESETS = {
-    "Streaming — Spotify / Apple Music (-14 LUFS)": -14.0,
+    "Streaming â€” Spotify / Apple Music (-14 LUFS)": -14.0,
     "YouTube / Podcasts (-14 LUFS)":                -14.0,
     "TikTok / Instagram Reels (-14 LUFS)":          -14.0,
-    "Broadcast / TV — EBU R128 (-23 LUFS)":         -23.0,
-    "CD / Download — Max Loudness (no target)":      None,   # None = skip LUFS, just limit
+    "Broadcast / TV â€” EBU R128 (-23 LUFS)":         -23.0,
+    "CD / Download â€” Max Loudness (no target)":      None,   # None = skip LUFS, just limit
     "Custom (use manual_lufs_target below)":         "custom",
 }
 
 LUFS_PRESET_KEYS = list(LUFS_PRESETS.keys())
 
 
-# ── Harmonic Exciter ──────────────────────────────────────────────────────────
+# ”€”€ Harmonic Exciter ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _harmonic_exciter(arr: np.ndarray, sr: int,
                       drive: float, blend: float,
                       high_freq_only: bool = True) -> np.ndarray:
     """
     Adds harmonic saturation (even + odd harmonics) for perceived brightness/presence.
-    drive: 0.0–1.0 — saturation amount
-    blend: 0.0–1.0 — wet/dry mix (0=dry, 1=fully excited)
+    drive: 0.0â€“1.0 â€” saturation amount
+    blend: 0.0â€“1.0 â€” wet/dry mix (0=dry, 1=fully excited)
     high_freq_only: if True, only excite content above 3kHz (avoids muddying lows)
     """
     if drive < 0.001 or blend < 0.001:
@@ -106,12 +106,12 @@ def _harmonic_exciter(arr: np.ndarray, sr: int,
     return (arr + harmonics * blend).astype(np.float32)
 
 
-# ── Dither + noise shaping ────────────────────────────────────────────────────
+# ”€”€ Dither + noise shaping ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _apply_dither(arr: np.ndarray, bit_depth: int = 24,
                   noise_shape: bool = True) -> np.ndarray:
     """
-    TPDF dither for final output — critical when delivering at 16/24-bit.
+    TPDF dither for final output â€” critical when delivering at 16/24-bit.
     Noise shaping shifts dither noise to less audible frequencies.
     """
     if bit_depth not in (16, 24):
@@ -119,7 +119,7 @@ def _apply_dither(arr: np.ndarray, bit_depth: int = 24,
 
     # TPDF dither amplitude = 1 LSB
     lsb = 2.0 ** (-(bit_depth - 1))
-    # Two rectangular noise sources → triangular probability distribution
+    # Two rectangular noise sources †’ triangular probability distribution
     d1  = np.random.uniform(-lsb * 0.5, lsb * 0.5, arr.shape).astype(np.float32)
     d2  = np.random.uniform(-lsb * 0.5, lsb * 0.5, arr.shape).astype(np.float32)
     dither = d1 + d2
@@ -138,16 +138,16 @@ def _apply_dither(arr: np.ndarray, bit_depth: int = 24,
     return (arr + dither).astype(np.float32)
 
 
-# ── Node ─────────────────────────────────────────────────────────────────────
+# ”€”€ Node ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 class S42PMasteringChain:
     """
-    🎚️ S42P Mastering Chain
+    ðŸŽšï¸ S42P Mastering Chain
     The final mastering stage. Place last in your audio chain before export.
 
     Complete signal flow:
-    Input → Stereo Width → Harmonic Exciter → LUFS Targeting →
-            True Peak Limiter → Dither → Output
+    Input â†’ Stereo Width â†’ Harmonic Exciter â†’ LUFS Targeting â†’
+            True Peak Limiter â†’ Dither â†’ Output
 
     Outputs the mastered audio plus a comprehensive metering report
     (LUFS, True Peak, Dynamic Range, gain applied).
@@ -159,19 +159,19 @@ class S42PMasteringChain:
             "required": {
                 "audio": ("AUDIO", {
                     "tooltip": ("Input audio for final mastering. "
-                                "Connect from Parametric EQ → Dynamics Processor → here. "
+                                "Connect from Parametric EQ â†’ Dynamics Processor â†’ here. "
                                 "This should be your final mix before export.")
                 }),
 
-                # ── Stereo Width ─────────────────────────────────────────────
+                # ”€”€ Stereo Width ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
                 "stereo_width": ("FLOAT", {
                     "default": 1.0, "min": 0.0, "max": 2.5,
                     "step": 0.05, "display": "slider",
                     "tooltip": ("Stereo width via Mid/Side processing. "
                                 "1.0 = unchanged. "
                                 "0.0 = full mono (useful for checking mono compatibility). "
-                                "1.5–2.0 = wider stereo image for electronic/pop. "
-                                "Above 2.0 can cause phase issues — use carefully. "
+                                "1.5â€“2.0 = wider stereo image for electronic/pop. "
+                                "Above 2.0 can cause phase issues â€” use carefully. "
                                 "Tip: check mono compatibility after widening by setting to 0.0.")
                 }),
                 "mid_gain": ("FLOAT", {
@@ -189,13 +189,13 @@ class S42PMasteringChain:
                                 "0dB = unchanged.")
                 }),
 
-                # ── Harmonic Exciter ─────────────────────────────────────────
+                # ”€”€ Harmonic Exciter ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
                 "exciter_drive": ("FLOAT", {
                     "default": 0.0, "min": 0.0, "max": 1.0,
                     "step": 0.01, "display": "slider",
                     "tooltip": ("Harmonic exciter saturation drive. 0 = disabled (no effect). "
-                                "0.1–0.3 = subtle air and presence. 0.5–0.8 = obvious brightness. "
-                                "1.0 = heavy saturation. Use sparingly — small amounts go a long way. "
+                                "0.1â€“0.3 = subtle air and presence. 0.5â€“0.8 = obvious brightness. "
+                                "1.0 = heavy saturation. Use sparingly â€” small amounts go a long way. "
                                 "Good for adding life to dull TTS vocals or flat AceStep output.")
                 }),
                 "exciter_blend": ("FLOAT", {
@@ -203,24 +203,24 @@ class S42PMasteringChain:
                     "step": 0.01, "display": "slider",
                     "tooltip": ("Wet/dry blend of the harmonic exciter. "
                                 "0.0 = dry (no harmonics added). 1.0 = full wet. "
-                                "0.2–0.4 is subtle and musical. "
+                                "0.2â€“0.4 is subtle and musical. "
                                 "Only active when exciter_drive > 0.")
                 }),
                 "exciter_high_only": ("BOOLEAN", {
                     "default": True,
                     "tooltip": ("When enabled, the exciter only processes frequencies above 3kHz. "
-                                "Recommended — prevents the exciter from muddying the low end. "
+                                "Recommended â€” prevents the exciter from muddying the low end. "
                                 "Disable only if you want full-band saturation.")
                 }),
 
-                # ── LUFS Targeting ────────────────────────────────────────────
+                # ”€”€ LUFS Targeting ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
                 "lufs_preset": (LUFS_PRESET_KEYS, {
                     "default": LUFS_PRESET_KEYS[0],
                     "tooltip": ("Target loudness preset for your delivery platform. "
-                                "Streaming services (Spotify, Apple, YouTube) normalise to -14 LUFS — "
+                                "Streaming services (Spotify, Apple, YouTube) normalise to -14 LUFS â€” "
                                 "delivering louder will be turned down, quieter will be turned up. "
                                 "Broadcast (TV/radio) uses -23 LUFS (EBU R128). "
-                                "CD has no target — uses max loudness before clipping. "
+                                "CD has no target â€” uses max loudness before clipping. "
                                 "Select 'Custom' to enter a manual target below.")
                 }),
                 "manual_lufs_target": ("FLOAT", {
@@ -232,7 +232,7 @@ class S42PMasteringChain:
                                 "Lower = quieter. More negative = quieter.")
                 }),
 
-                # ── True Peak Limiter ─────────────────────────────────────────
+                # ”€”€ True Peak Limiter ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
                 "true_peak_ceiling": ("FLOAT", {
                     "default": -1.0, "min": -6.0, "max": -0.1,
                     "step": 0.1, "display": "slider",
@@ -249,13 +249,13 @@ class S42PMasteringChain:
                                 "Disabling this risks clipping on playback devices.")
                 }),
 
-                # ── Dither ────────────────────────────────────────────────────
+                # ”€”€ Dither ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
                 "dither_enabled": ("BOOLEAN", {
                     "default": True,
                     "tooltip": ("Enable TPDF dither on output. "
                                 "Required when delivering at 16-bit (CD, some streaming). "
                                 "Adds tiny noise that prevents quantisation distortion at low levels. "
-                                "Safe to leave on for 24-bit too — it's inaudible.")
+                                "Safe to leave on for 24-bit too â€” it's inaudible.")
                 }),
                 "dither_bit_depth": (["16", "24"], {
                     "default": "24",
@@ -296,7 +296,7 @@ class S42PMasteringChain:
             "input_dynamic_range":  None,
         }
 
-        # ── Measure input ─────────────────────────────────────────────────────
+        # ”€”€ Measure input ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
         try:
             report["input_lufs"]           = round(measure_lufs(arr, sr), 2)
             report["input_true_peak_dbtp"] = round(measure_true_peak_db(arr), 2)
@@ -304,7 +304,7 @@ class S42PMasteringChain:
         except Exception as e:
             logger.warning(f"Input measurement failed: {e}")
 
-        # ── Step 1: Stereo Width (M/S) ────────────────────────────────────────
+        # ”€”€ Step 1: Stereo Width (M/S) ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
         from s42p_audio_utils import to_mid_side, from_mid_side
         mid, side = to_mid_side(arr)
 
@@ -318,7 +318,7 @@ class S42PMasteringChain:
         arr = from_mid_side(mid, side).astype(np.float32)
         report["stereo_width_applied"] = stereo_width
 
-        # ── Step 2: Harmonic Exciter ──────────────────────────────────────────
+        # ”€”€ Step 2: Harmonic Exciter ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
         if exciter_drive > 0.001:
             arr = _harmonic_exciter(arr, sr, exciter_drive, exciter_blend, exciter_high_only)
             report["exciter_drive"]  = exciter_drive
@@ -326,7 +326,7 @@ class S42PMasteringChain:
         else:
             report["exciter_drive"] = 0.0
 
-        # ── Step 3: LUFS Targeting ─────────────────────────────────────────────
+        # ”€”€ Step 3: LUFS Targeting ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
         target_lufs = LUFS_PRESETS.get(lufs_preset, -14.0)
         if target_lufs == "custom":
             target_lufs = float(manual_lufs_target)
@@ -343,23 +343,23 @@ class S42PMasteringChain:
                 logger.warning(f"LUFS targeting failed: {e}")
                 report["lufs_target_error"] = str(e)
         else:
-            report["lufs_target"] = "CD/Max — no LUFS target"
+            report["lufs_target"] = "CD/Max â€” no LUFS target"
 
-        # ── Step 4: True Peak Limiter ──────────────────────────────────────────
+        # ”€”€ Step 4: True Peak Limiter ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
         if limiter_enabled:
             arr = soft_limit(arr, threshold_db=float(true_peak_ceiling))
             report["true_peak_ceiling_dbtp"] = true_peak_ceiling
 
         arr = np.clip(arr, -1.0, 1.0).astype(np.float32)
 
-        # ── Step 5: Dither ─────────────────────────────────────────────────────
+        # ”€”€ Step 5: Dither ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
         if dither_enabled:
             bd  = int(dither_bit_depth)
             arr = _apply_dither(arr, bit_depth=bd, noise_shape=noise_shaping)
             report["dither_bit_depth"] = bd
             report["noise_shaping"]    = noise_shaping
 
-        # ── Measure output ─────────────────────────────────────────────────────
+        # ”€”€ Measure output ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
         try:
             report["output_lufs"]           = round(measure_lufs(arr, sr), 2)
             report["output_true_peak_dbtp"] = round(measure_true_peak_db(arr), 2)
@@ -371,22 +371,22 @@ class S42PMasteringChain:
 
         report["sample_rate"] = sr
 
-        # ── Tip: mono compatibility warning ───────────────────────────────────
+        # ”€”€ Tip: mono compatibility warning ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
         if stereo_width > 1.5:
             report["warning"] = (
-                "Stereo width > 1.5 — check mono compatibility. "
+                "Stereo width > 1.5 â€” check mono compatibility. "
                 "Temporarily set stereo_width=0.0 to hear the mono sum."
             )
 
         return (audio_to_comfy(arr, sr), json.dumps(report, indent=2, cls=_NumpyEncoder))
 
 
-# ── ComfyUI registration ──────────────────────────────────────────────────────
+# ”€”€ ComfyUI registration ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 NODE_CLASS_MAPPINGS = {
     "S42PMasteringChain": S42PMasteringChain,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "S42PMasteringChain": "🎚️ S42P Mastering Chain",
+    "S42PMasteringChain": "ðŸŽšï¸ S42P Mastering Chain",
 }

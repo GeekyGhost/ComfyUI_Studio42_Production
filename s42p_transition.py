@@ -1,5 +1,5 @@
 """
-S42 Production Suite — Video Transitions Node (FIXED)
+S42 Production Suite â€” Video Transitions Node (FIXED)
 =====================================================
 CapCut-style transitions between two video clip batches.
 
@@ -28,7 +28,7 @@ from s42p_video_utils import (
 
 logger = logging.getLogger(__name__)
 
-CATEGORY = "S42 Production Suite 🎬 Animation"
+CATEGORY = "S42 Production Suite ðŸŽ¬ Animation"
 
 TRANSITION_TYPES = [
     "cut", "dissolve", "fade_black", "fade_white",
@@ -40,7 +40,7 @@ TRANSITION_TYPES = [
 ]
 
 
-# ── Per-transition frame generators ──────────────────────────────────────────
+# ”€”€ Per-transition frame generators ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _t_dissolve(a: np.ndarray, b: np.ndarray, t: float) -> np.ndarray:
     """Blend two frames - uses both input frames"""
@@ -252,11 +252,11 @@ def _apply_transition_frame(a_np: np.ndarray, b_np: np.ndarray,
         return _t_dissolve(a_np, b_np, t)
 
 
-# ── Node ─────────────────────────────────────────────────────────────────────
+# ”€”€ Node ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 class S42PTransition:
     """
-    🎬 S42P Transition (FIXED)
+    ðŸŽ¬ S42P Transition (FIXED)
     
     FIXED ISSUES:
     - Push/wipe/zoom transitions now use STABLE SOURCE FRAMES
@@ -310,7 +310,7 @@ class S42PTransition:
         na = clip_a.shape[0]
         nb = clip_b.shape[0]
 
-        # Handle cut — just concatenate
+        # Handle cut €” just concatenate
         if transition_type == "cut":
             merged = torch.cat([clip_a, clip_b], dim=0)
             return (merged, int(merged.shape[0]))
@@ -367,12 +367,12 @@ class S42PTransition:
         return (merged, int(merged.shape[0]))
 
 
-# ── ComfyUI registration ──────────────────────────────────────────────────────
+# ”€”€ ComfyUI registration ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 NODE_CLASS_MAPPINGS = {
     "S42PTransition": S42PTransition,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "S42PTransition": "🎬 S42P Transition",
+    "S42PTransition": "ðŸŽ¬ S42P Transition",
 }

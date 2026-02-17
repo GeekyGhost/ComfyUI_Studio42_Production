@@ -1,15 +1,15 @@
 """
-S42 Production Suite — Color Grade Node
+S42 Production Suite â€” Color Grade Node
 ========================================
 Professional per-frame color grading for IMAGE batches (video or single images).
 
 Three grading stages, applied in order:
-  1. LUT       — 3D Look-Up Table (.cube file) for film/grade looks
-  2. Curves    — Lift/Gamma/Gain per channel + master
-  3. HSL       — Hue/Saturation/Lightness per color range (6 ranges)
+  1. LUT       â€” 3D Look-Up Table (.cube file) for film/grade looks
+  2. Curves    â€” Lift/Gamma/Gain per channel + master
+  3. HSL       â€” Hue/Saturation/Lightness per color range (6 ranges)
 
 Any stage can be bypassed independently.
-Works on [B, H, W, C] float32 IMAGE tensors — fully batch-aware.
+Works on [B, H, W, C] float32 IMAGE tensors â€” fully batch-aware.
 
 Python 3.12 | ComfyUI Portable | numpy + torch
 """
@@ -22,9 +22,9 @@ from typing import Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-CATEGORY = "S42 Production Suite 🎨 Color"
+CATEGORY = "S42 Production Suite ðŸŽ¨ Color"
 
-# ── LUT (.cube) parser ────────────────────────────────────────────────────────
+# ”€”€ LUT (.cube) parser ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _parse_cube_lut(filepath: str) -> Optional[Tuple[np.ndarray, int]]:
     """
@@ -60,11 +60,11 @@ def _parse_cube_lut(filepath: str) -> Optional[Tuple[np.ndarray, int]]:
                             pass
 
         if size is None or len(data) != size ** 3:
-            logger.warning(f"LUT parse failed — expected {size**3 if size else '?'} "
+            logger.warning(f"LUT parse failed â€” expected {size**3 if size else '?'} "
                            f"entries, got {len(data)}")
             return None
 
-        # Shape: [size*size*size, 3] → [size, size, size, 3]
+        # Shape: [size*size*size, 3] †’ [size, size, size, 3]
         lut = np.array(data, dtype=np.float32).reshape(size, size, size, 3)
 
         # Normalise domain if non-standard
@@ -93,9 +93,9 @@ def _apply_lut(img: np.ndarray, lut: np.ndarray, size: int,
     coords = flat * (size - 1)
     lo     = np.floor(coords).astype(np.int32).clip(0, size - 2)
     hi     = lo + 1
-    frac   = coords - lo   # [N, 3] — fractional parts
+    frac   = coords - lo   # [N, 3] â€” fractional parts
 
-    # Trilinear interpolation — 8 corners of the LUT cube
+    # Trilinear interpolation €” 8 corners of the LUT cube
     r0, g0, b0 = lo[:, 0],   lo[:, 1],   lo[:, 2]
     r1, g1, b1 = hi[:, 0],   hi[:, 1],   hi[:, 2]
     fr, fg, fb = frac[:, 0], frac[:, 1], frac[:, 2]
@@ -123,7 +123,7 @@ def _apply_lut(img: np.ndarray, lut: np.ndarray, size: int,
     return result
 
 
-# ── Curves / Levels ──────────────────────────────────────────────────────────
+# ”€”€ Curves / Levels ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _apply_curves(img: np.ndarray,
                   # Master
@@ -181,10 +181,10 @@ def _apply_curves(img: np.ndarray,
     return out.clip(0.0, 1.0).astype(np.float32)
 
 
-# ── HSL Grading ──────────────────────────────────────────────────────────────
+# ”€”€ HSL Grading ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _rgb_to_hsl(img: np.ndarray) -> np.ndarray:
-    """[H,W,3] RGB float → [H,W,3] HSL float (H: 0-360, S: 0-1, L: 0-1)"""
+    """[H,W,3] RGB float †’ [H,W,3] HSL float (H: 0-360, S: 0-1, L: 0-1)"""
     r, g, b = img[...,0], img[...,1], img[...,2]
     cmax = np.maximum(np.maximum(r, g), b)
     cmin = np.minimum(np.minimum(r, g), b)
@@ -209,7 +209,7 @@ def _rgb_to_hsl(img: np.ndarray) -> np.ndarray:
 
 
 def _hsl_to_rgb(hsl: np.ndarray) -> np.ndarray:
-    """[H,W,3] HSL → [H,W,3] RGB float"""
+    """[H,W,3] HSL †’ [H,W,3] RGB float"""
     H, S, L = hsl[...,0], hsl[...,1], hsl[...,2]
     C = (1.0 - np.abs(2.0 * L - 1.0)) * S
     X = C * (1.0 - np.abs((H / 60.0) % 2.0 - 1.0))
@@ -283,14 +283,14 @@ def _apply_hsl(img: np.ndarray,
     return _hsl_to_rgb(hsl)
 
 
-# ── Node ─────────────────────────────────────────────────────────────────────
+# ”€”€ Node ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 class S42PColorGrade:
     """
-    🎨 S42P Color Grade
+    ðŸŽ¨ S42P Color Grade
     Three-stage professional color grading for video or images.
 
-    Signal flow: Input → LUT → Curves/Levels → HSL → Output
+    Signal flow: Input â†’ LUT â†’ Curves/Levels â†’ HSL â†’ Output
     Each stage can be bypassed independently.
 
     Works on both single images and video batches.
@@ -312,10 +312,10 @@ class S42PColorGrade:
             tips = {
                 "hue": (f"Hue rotation for {color} (degrees). "
                         f"Positive = rotate hue clockwise. Negative = counter-clockwise. "
-                        f"0 = unchanged. ±30° is a strong shift."),
+                        f"0 = unchanged. Â±30Â° is a strong shift."),
                 "sat": (f"Saturation adjustment for {color}. "
                         f"Positive = more vivid. Negative = desaturate toward grey. "
-                        f"0 = unchanged. ±0.3 is a noticeable change."),
+                        f"0 = unchanged. Â±0.3 is a noticeable change."),
                 "lum": (f"Lightness adjustment for {color}. "
                         f"Positive = lighter. Negative = darker. "
                         f"0 = unchanged."),
@@ -326,11 +326,11 @@ class S42PColorGrade:
             "required": {
                 "images": ("IMAGE", {
                     "tooltip": ("Input image or video batch to color grade. "
-                                "Accepts any IMAGE output — single frames or full video batches. "
+                                "Accepts any IMAGE output â€” single frames or full video batches. "
                                 "Connect at the end of your compositing chain before export.")
                 }),
 
-                # ── LUT Stage ─────────────────────────────────────────────────
+                # ”€”€ LUT Stage ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
                 "lut_enabled": ("BOOLEAN", {
                     "default": False,
                     "tooltip": ("Enable 3D LUT application. "
@@ -355,7 +355,7 @@ class S42PColorGrade:
                                 "Useful for taming strong film LUTs.")
                 }),
 
-                # ── Curves Stage ──────────────────────────────────────────────
+                # ”€”€ Curves Stage ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
                 "curves_enabled": ("BOOLEAN", {
                     "default": True,
                     "tooltip": "Enable curves/levels adjustment. Applied after LUT, before HSL."
@@ -396,7 +396,7 @@ class S42PColorGrade:
                 "b_gamma": ("FLOAT", {"default": 1.0, "min": 0.1,  "max": 3.0, "step": 0.01,  "display": "slider", "tooltip": lgk_tip("Blue","gamma")}),
                 "b_gain":  ("FLOAT", {"default": 1.0, "min": 0.1,  "max": 3.0, "step": 0.01,  "display": "slider", "tooltip": lgk_tip("Blue","gain")}),
 
-                # ── HSL Stage ─────────────────────────────────────────────────
+                # ”€”€ HSL Stage ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
                 "hsl_enabled": ("BOOLEAN", {
                     "default": False,
                     "tooltip": "Enable HSL per-color-range adjustment. Applied last, after curves."
@@ -467,7 +467,7 @@ class S42PColorGrade:
             result = _parse_cube_lut(lut_file_path.strip())
             if result:
                 lut_data, lut_size = result
-                logger.info(f"LUT loaded: {os.path.basename(lut_file_path)} ({lut_size}³)")
+                logger.info(f"LUT loaded: {os.path.basename(lut_file_path)} ({lut_size}Â³)")
             else:
                 logger.warning(f"LUT failed to load: {lut_file_path}")
 
@@ -509,12 +509,12 @@ class S42PColorGrade:
         return (torch.from_numpy(out),)
 
 
-# ── ComfyUI registration ──────────────────────────────────────────────────────
+# ”€”€ ComfyUI registration ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 NODE_CLASS_MAPPINGS = {
     "S42PColorGrade": S42PColorGrade,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "S42PColorGrade": "🎨 S42P Color Grade",
+    "S42PColorGrade": "ðŸŽ¨ S42P Color Grade",
 }

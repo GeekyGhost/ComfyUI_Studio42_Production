@@ -1,5 +1,5 @@
 """
-S42 Production Suite — Audio Visualizer v6.0
+S42 Production Suite â€” Audio Visualizer v6.0
 =============================================
 Multi-mode audio-reactive visualizer for music videos.
 
@@ -11,19 +11,19 @@ IMPROVEMENTS in v6.0:
   - NEW: Kaleidoscope, Particle Explosion, Waveform Tunnel effects
 
 MODES:
-  spectrum_classic  — bars + oscilloscope ring + particle burst (Winamp-inspired)
-  lava_lamp         — physics blobs that rise/fall, morph with music
-  wormhole          — psychedelic 3D tunnel with depth twisting (Doctor Who style)
-  matrix            — falling character rain, columns pulse to bass
-  stargate          — expanding portal rings with energy tendrils
-  oscilloscope      — clean waveform scope with peak indicators ✓ PERFECT
-  plasma_waves      — flowing energy ribbons (replaces aurora)
-  fractal_zoom      — smooth Mandelbrot zoom with rotation
-  dna_helix         — rotating 3D double helix synced to music
-  liquid_metal      — enhanced chrome surface with dynamic lighting
-  kaleidoscope      — symmetric pattern reflections (NEW)
-  particle_explosion— radial burst particles (NEW)
-  waveform_tunnel   — 3D waveform tunnel fly-through (NEW)
+  spectrum_classic  â€” bars + oscilloscope ring + particle burst (Winamp-inspired)
+  lava_lamp         â€” physics blobs that rise/fall, morph with music
+  wormhole          â€” psychedelic 3D tunnel with depth twisting (Doctor Who style)
+  matrix            â€” falling character rain, columns pulse to bass
+  stargate          â€” expanding portal rings with energy tendrils
+  oscilloscope      â€” clean waveform scope with peak indicators âœ“ PERFECT
+  plasma_waves      â€” flowing energy ribbons (replaces aurora)
+  fractal_zoom      â€” smooth Mandelbrot zoom with rotation
+  dna_helix         â€” rotating 3D double helix synced to music
+  liquid_metal      â€” enhanced chrome surface with dynamic lighting
+  kaleidoscope      â€” symmetric pattern reflections (NEW)
+  particle_explosionâ€” radial burst particles (NEW)
+  waveform_tunnel   â€” 3D waveform tunnel fly-through (NEW)
 
 Python 3.12 | ComfyUI Portable | Pillow + numpy (CPU, no VRAM)
 """
@@ -52,9 +52,9 @@ try:
 except ImportError:
     TORCH_AVAILABLE = False
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # Colour palettes
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 PALETTES = {
     "Spectrum Classic":  {"bg":(0,0,0),    "bar_low":(0,255,0),   "bar_mid":(255,255,0),
@@ -104,9 +104,9 @@ VIZ_MODES = [
     "kaleidoscope",     "particle_explosion", "waveform_tunnel"
 ]
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # Shared: energy extraction + wave chunk
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _extract_energy(audio_np: np.ndarray, sr: int, fps: float,
                     max_frames: int):
@@ -156,9 +156,9 @@ def _wave_chunk(audio_np: np.ndarray, sr: int, i: int, fps: float, n_frames: int
     return c if len(c) >= 2 else np.zeros(64, np.float32)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # Colour helpers
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _lerp(c1, c2, t):
     t = max(0., min(1., float(t)))
@@ -171,9 +171,9 @@ def _hsv(h, s, v):
     return (int(r*255), int(g*255), int(b*255))
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # MODE: SPECTRUM CLASSIC (kept as-is, already perfect)
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _spectrum_classic_frame(draw, w, h, bass, mid, high, beat, wave, fi, pal, bar_count, particles):
     # Background plasma
@@ -233,9 +233,9 @@ def _spectrum_classic_frame(draw, w, h, bass, mid, high, beat, wave, fi, pal, ba
     return particles
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # MODE: WORMHOLE (Doctor Who style psychedelic 3D tunnel)
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _wormhole_frame(draw, w, h, bass, mid, high, beat, fi, pal):
     """Psychedelic 3D tunnel with twisting, depth-mapped rings - Doctor Who intro style"""
@@ -290,9 +290,9 @@ def _wormhole_frame(draw, w, h, bass, mid, high, beat, fi, pal):
                             fill=pal["particle"])
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # MODE: PLASMA WAVES (replaces aurora)
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _plasma_waves_frame(draw, w, h, bass, mid, high, beat, fi, pal):
     """Flowing plasma energy ribbons"""
@@ -336,9 +336,9 @@ def _plasma_waves_frame(draw, w, h, bass, mid, high, beat, fi, pal):
             draw.line(points, fill=ribbon_col, width=max(2, int(3 + bass * 4)))
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # MODE: FRACTAL ZOOM (smooth continuous zoom with rotation)
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _fractal_zoom_frame(draw, w, h, bass, mid, high, beat, fi, pal):
     """Smooth Mandelbrot/Julia set zoom with rotation"""
@@ -389,9 +389,9 @@ def _fractal_zoom_frame(draw, w, h, bass, mid, high, beat, fi, pal):
                 pixels[px, py] = col
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # MODE: LIQUID METAL (enhanced)
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _liquid_metal_frame(draw, w, h, bass, mid, high, beat, fi, pal):
     """Enhanced chrome/mercury surface with dynamic lighting and ripples"""
@@ -446,10 +446,10 @@ def _liquid_metal_frame(draw, w, h, bass, mid, high, beat, fi, pal):
             )
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # Other existing modes (lava_lamp, matrix, stargate, oscilloscope, dna_helix)
 # Keeping implementation from original - they work well
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _lava_frame(draw, w, h, bass, mid, high, beat, fi, pal, blobs):
     """Physics-based lava lamp blobs"""
@@ -614,9 +614,9 @@ def _dna_frame(draw, w, h, bass, mid, high, beat, fi, pal):
         draw.line(pts2, fill=pal["bar_top"], width=3)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # NEW MODES
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _kaleidoscope_frame(draw, w, h, bass, mid, high, beat, fi, pal):
     """Symmetric kaleidoscope pattern"""
@@ -718,9 +718,9 @@ def _waveform_tunnel_frame(draw, w, h, bass, mid, high, beat, wave, fi, pal):
             draw.line(pts + [pts[0]], fill=col, width=width)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # Dispatch
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 def _render_frame(mode: str, w: int, h: int, bass: float, mid: float, high: float,
                   beat: float, wave: np.ndarray, fi: int, pal: dict,
@@ -780,22 +780,22 @@ def _render_frame(mode: str, w: int, h: int, bass: float, mid: float, high: floa
     return arr, state
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 # ComfyUI Node
-# ─────────────────────────────────────────────────────────────────────────────
+# ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
 
 class S42PAudioVisualizer:
     """
-    S42P Audio Visualizer — 13 audio-reactive modes for music videos.
+    S42P Audio Visualizer â€” 13 audio-reactive modes for music videos.
 
     UPDATED MODES:
-      wormhole         - Doctor Who style psychedelic 3D tunnel ✨ NEW
-      plasma_waves     - Flowing energy ribbons (replaces aurora) ✨ NEW
-      fractal_zoom     - Smooth Mandelbrot zoom with rotation ✨ IMPROVED
-      liquid_metal     - Enhanced chrome surface ✨ IMPROVED
-      kaleidoscope     - Symmetric pattern reflections ✨ NEW
-      particle_explosion - Radial burst particles ✨ NEW
-      waveform_tunnel  - 3D waveform fly-through ✨ NEW
+      wormhole         - Doctor Who style psychedelic 3D tunnel âœ¨ NEW
+      plasma_waves     - Flowing energy ribbons (replaces aurora) âœ¨ NEW
+      fractal_zoom     - Smooth Mandelbrot zoom with rotation âœ¨ IMPROVED
+      liquid_metal     - Enhanced chrome surface âœ¨ IMPROVED
+      kaleidoscope     - Symmetric pattern reflections âœ¨ NEW
+      particle_explosion - Radial burst particles âœ¨ NEW
+      waveform_tunnel  - 3D waveform fly-through âœ¨ NEW
 
     PERFECT (unchanged):
       spectrum_classic, oscilloscope
@@ -833,7 +833,7 @@ class S42PAudioVisualizer:
     RETURN_TYPES  = ("IMAGE",)
     RETURN_NAMES  = ("visualization",)
     FUNCTION      = "visualize"
-    CATEGORY      = "S42 Production Suite 🎨 Visualizer"
+    CATEGORY      = "S42 Production Suite ðŸŽ¨ Visualizer"
 
     def visualize(self, audio: dict, mode: str, fps: float, width: int,
                   height: int, palette: str, bar_count: int, max_frames: int,
@@ -886,10 +886,10 @@ class S42PAudioVisualizer:
 
         batch = np.stack(frames, axis=0).astype(np.float32)
         frames.clear(); gc.collect()
-        print(f"[S42P Visualizer v6.0] ✓ {n_frames} frames  {batch.nbytes/1024/1024:.1f}MB")
+        print(f"[S42P Visualizer v6.0] âœ“ {n_frames} frames  {batch.nbytes/1024/1024:.1f}MB")
 
         return (torch.from_numpy(batch) if TORCH_AVAILABLE else batch,)
 
 
 NODE_CLASS_MAPPINGS        = {"S42PAudioVisualizer": S42PAudioVisualizer}
-NODE_DISPLAY_NAME_MAPPINGS = {"S42PAudioVisualizer": "S42P Audio Visualizer 🎨"}
+NODE_DISPLAY_NAME_MAPPINGS = {"S42PAudioVisualizer": "S42P Audio Visualizer ðŸŽ¨"}
