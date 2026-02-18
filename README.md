@@ -7,6 +7,12 @@ All DSP runs on **CPU** — your GPU stays free for generation.
 
 ---
 
+
+
+https://github.com/user-attachments/assets/2297b64b-26e5-43ba-bc9d-e9ce6db62bfa
+
+
+
 ## What's New in v4.0
 
 | Change | Detail |
