@@ -1,8 +1,8 @@
 """
-S42 Production Suite — Shared Audio Utilities
+S42 Production Suite ? Shared Audio Utilities
 ==============================================
 Common DSP helpers used across all audio nodes.
-All processing is CPU/numpy/scipy — GPU stays free for Wan/Qwen.
+All processing is CPU/numpy/scipy ? GPU stays free for Wan/Qwen.
 
 Python 3.12 | ComfyUI Portable | torchaudio + scipy + numpy
 """
@@ -14,13 +14,13 @@ from typing import Tuple, Optional
 
 logger = logging.getLogger(__name__)
 
-# ── Optional dependency flags ─────────────────────────────────────────────
+# ?? Optional dependency flags ?????????????????????????????????????????????
 try:
     import scipy.signal as signal
     SCIPY_AVAILABLE = True
 except ImportError:
     SCIPY_AVAILABLE = False
-    logger.warning("scipy not available — EQ and filtering will be limited")
+    logger.warning("scipy not available ? EQ and filtering will be limited")
 
 try:
     import torchaudio
@@ -28,28 +28,28 @@ try:
     TORCHAUDIO_AVAILABLE = True
 except ImportError:
     TORCHAUDIO_AVAILABLE = False
-    logger.warning("torchaudio not available — resampling will use linear interpolation")
+    logger.warning("torchaudio not available ? resampling will use linear interpolation")
 
 try:
     import pyloudnorm as pyln
     PYLOUDNORM_AVAILABLE = True
 except ImportError:
     PYLOUDNORM_AVAILABLE = False
-    logger.warning("pyloudnorm not available — LUFS measurement will use RMS estimate")
+    logger.warning("pyloudnorm not available ? LUFS measurement will use RMS estimate")
 
 try:
     import librosa
     LIBROSA_AVAILABLE = True
 except ImportError:
     LIBROSA_AVAILABLE = False
-    logger.warning("librosa not available — beat detection will be limited")
+    logger.warning("librosa not available ? beat detection will be limited")
 
 
-# ── ComfyUI AUDIO format helpers ──────────────────────────────────────────
+# ?? ComfyUI AUDIO format helpers ??????????????????????????????????????????
 
 def audio_from_comfy(audio_dict: dict) -> Tuple[np.ndarray, int]:
     """
-    Convert ComfyUI AUDIO dict → (numpy float32 array [channels, samples], sample_rate).
+    Convert ComfyUI AUDIO dict ? (numpy float32 array [channels, samples], sample_rate).
     Handles LazyAudioMap, plain dict with waveform tensor, etc.
     """
     waveform = audio_dict.get("waveform")
@@ -58,30 +58,30 @@ def audio_from_comfy(audio_dict: dict) -> Tuple[np.ndarray, int]:
     if waveform is None:
         raise ValueError("AUDIO dict has no 'waveform' key")
 
-    # waveform may be [B, C, S] or [C, S] — normalise to [C, S]
+    # waveform may be [B, C, S] or [C, S] ? normalise to [C, S]
     if isinstance(waveform, torch.Tensor):
         w = waveform.detach().cpu().float()
     else:
         w = torch.as_tensor(waveform, dtype=torch.float32)
 
     if w.ndim == 3:
-        w = w[0]          # drop batch dim → [C, S]
+        w = w[0]          # drop batch dim ? [C, S]
     elif w.ndim == 1:
-        w = w.unsqueeze(0)  # mono [S] → [1, S]
+        w = w.unsqueeze(0)  # mono [S] ? [1, S]
 
     return w.numpy(), sample_rate
 
 
 def audio_to_comfy(arr: np.ndarray, sample_rate: int) -> dict:
     """
-    Convert (numpy float32 [C, S], sr) → ComfyUI AUDIO dict.
+    Convert (numpy float32 [C, S], sr) ? ComfyUI AUDIO dict.
     Ensures output is [1, C, S] (batch=1).
     """
     if arr.ndim == 1:
-        arr = arr[np.newaxis, :]   # [S] → [1, S]
+        arr = arr[np.newaxis, :]   # [S] ? [1, S]
     tensor = torch.from_numpy(arr.astype(np.float32))
     if tensor.ndim == 2:
-        tensor = tensor.unsqueeze(0)   # [C, S] → [1, C, S]
+        tensor = tensor.unsqueeze(0)   # [C, S] ? [1, C, S]
     return {"waveform": tensor, "sample_rate": int(sample_rate)}
 
 
@@ -98,7 +98,7 @@ def ensure_float32(arr: np.ndarray) -> np.ndarray:
     return arr.astype(np.float32, copy=False)
 
 
-# ── dB / linear helpers ───────────────────────────────────────────────────
+# ?? dB / linear helpers ???????????????????????????????????????????????????
 
 def db_to_linear(db: float) -> float:
     return 10.0 ** (db / 20.0)
@@ -119,7 +119,7 @@ def peak_db(arr: np.ndarray) -> float:
     return linear_to_db(np.max(np.abs(arr)))
 
 
-# ── LUFS measurement ──────────────────────────────────────────────────────
+# ?? LUFS measurement ??????????????????????????????????????????????????????
 
 def measure_lufs(arr: np.ndarray, sample_rate: int) -> float:
     """
@@ -163,7 +163,7 @@ def lufs_gain(arr: np.ndarray, sample_rate: int, target_lufs: float) -> float:
     return db_to_linear(delta_db)
 
 
-# ── Mid/Side processing ───────────────────────────────────────────────────
+# ?? Mid/Side processing ???????????????????????????????????????????????????
 
 def to_mid_side(stereo: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """Convert [2, S] L/R to Mid and Side channels."""
@@ -182,7 +182,7 @@ def from_mid_side(mid: np.ndarray, side: np.ndarray) -> np.ndarray:
 def stereo_width(arr: np.ndarray, width: float) -> np.ndarray:
     """
     Adjust stereo width via M/S processing.
-    width=0.0 → full mono, width=1.0 → unchanged, width=2.0 → double width.
+    width=0.0 ? full mono, width=1.0 ? unchanged, width=2.0 ? double width.
     """
     stereo = ensure_stereo(arr)
     mid, side = to_mid_side(stereo)
@@ -190,7 +190,7 @@ def stereo_width(arr: np.ndarray, width: float) -> np.ndarray:
     return from_mid_side(mid, side)
 
 
-# ── Soft limiter ──────────────────────────────────────────────────────────
+# ?? Soft limiter ??????????????????????????????????????????????????????????
 
 def soft_limit(arr: np.ndarray, threshold_db: float = -0.3) -> np.ndarray:
     """
@@ -201,7 +201,7 @@ def soft_limit(arr: np.ndarray, threshold_db: float = -0.3) -> np.ndarray:
     return np.tanh(arr / thresh) * thresh
 
 
-# ── Dynamic range measurement ─────────────────────────────────────────────
+# ?? Dynamic range measurement ?????????????????????????????????????????????
 
 def measure_dynamic_range(arr: np.ndarray) -> float:
     """

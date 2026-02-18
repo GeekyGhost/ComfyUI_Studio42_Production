@@ -1,11 +1,11 @@
 """
-S42 Production Suite â€” Shared Video Utilities
+S42 Production Suite ?? Shared Video Utilities
 =============================================
 Frame manipulation, easing functions, keyframe parsing, and
 interpolation helpers used by all video nodes.
 
 All operations work on ComfyUI IMAGE tensors: [B, H, W, C] float32 0-1.
-No GPU models needed â€” pure torch/numpy/scipy/PIL operations.
+No GPU models needed ?? pure torch/numpy/scipy/PIL operations.
 
 Python 3.12 | ComfyUI Portable
 """
@@ -31,33 +31,33 @@ try:
     CV2_AVAILABLE = True
 except ImportError:
     CV2_AVAILABLE = False
-    logger.warning("opencv-python not available â€” some transitions will use fallback")
+    logger.warning("opencv-python not available ?? some transitions will use fallback")
 
 
-# ”€”€ ComfyUI IMAGE tensor helpers ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# ???? ComfyUI IMAGE tensor helpers ??????????????????????????????????????????????????????????????????????????????????????????
 
 def frames_to_np(frames: torch.Tensor) -> np.ndarray:
-    """[B,H,W,C] float32 0-1 †’ [B,H,W,C] uint8 0-255"""
+    """[B,H,W,C] float32 0-1 ?? [B,H,W,C] uint8 0-255"""
     return (frames.cpu().numpy() * 255).clip(0, 255).astype(np.uint8)
 
 
 def np_to_frames(arr: np.ndarray) -> torch.Tensor:
-    """[B,H,W,C] uint8 0-255 †’ [B,H,W,C] float32 0-1"""
+    """[B,H,W,C] uint8 0-255 ?? [B,H,W,C] float32 0-1"""
     return torch.from_numpy(arr.astype(np.float32) / 255.0)
 
 
 def frame_to_pil(frame: torch.Tensor) -> "Image.Image":
-    """Single frame [H,W,C] float32 †’ PIL RGB"""
+    """Single frame [H,W,C] float32 ?? PIL RGB"""
     return Image.fromarray((frame.cpu().numpy() * 255).clip(0,255).astype(np.uint8), "RGB")
 
 
 def pil_to_frame(img: "Image.Image") -> torch.Tensor:
-    """PIL RGB †’ [H,W,C] float32"""
+    """PIL RGB ?? [H,W,C] float32"""
     return torch.from_numpy(np.array(img.convert("RGB")).astype(np.float32) / 255.0)
 
 
 def ensure_rgb(frames: torch.Tensor) -> torch.Tensor:
-    """Guarantee [B,H,W,3] €” drop alpha or expand grayscale."""
+    """Guarantee [B,H,W,3] ?? drop alpha or expand grayscale."""
     if frames.ndim == 3:
         frames = frames.unsqueeze(0)
     if frames.shape[-1] == 4:
@@ -69,7 +69,7 @@ def ensure_rgb(frames: torch.Tensor) -> torch.Tensor:
 
 def match_resolution(a: torch.Tensor, b: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
     """
-    Resize b to match a's HÃ—W if they differ.
+    Resize b to match a's H?W if they differ.
     Uses bilinear interpolation. Returns (a, b_resized).
     """
     if a.shape[1:3] == b.shape[1:3]:
@@ -80,7 +80,7 @@ def match_resolution(a: torch.Tensor, b: torch.Tensor) -> Tuple[torch.Tensor, to
     return a, b_r.permute(0, 2, 3, 1)                # back to [B,H,W,C]
 
 
-# ”€”€ Easing functions ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# ???? Easing functions ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 
 def ease_linear(t: float) -> float:
     return t
@@ -160,13 +160,13 @@ ALL_EASINGS = list(EASING_FUNCTIONS.keys())
 
 
 def apply_easing(t: float, easing: str) -> float:
-    """Apply named easing function to normalised time t ˆˆ [0,1]."""
+    """Apply named easing function to normalised time t ?? [0,1]."""
     t = float(np.clip(t, 0.0, 1.0))
     fn = EASING_FUNCTIONS.get(easing, ease_in_out_quad)
     return fn(t)
 
 
-# ”€”€ Keyframe string parser ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# ???? Keyframe string parser ????????????????????????????????????????????????????????????????????????????????????????????????????????
 # Format: "frame:value, frame:value, ..."
 # Optional per-keyframe easing: "frame:value:easing, ..."
 # Examples:
@@ -240,15 +240,15 @@ def build_value_curve(keyframes: List[Tuple[int, float, str]],
     return [interpolate_keyframes(keyframes, f) for f in range(n_frames)]
 
 
-# ”€”€ Framerate conversion ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# ???? Framerate conversion ????????????????????????????????????????????????????????????????????????????????????????????????????????????
 
 def convert_fps(frames: torch.Tensor, src_fps: float, dst_fps: float,
                 mode: str = "blend") -> torch.Tensor:
     """
     Convert a frame batch from src_fps to dst_fps.
     modes:
-      'duplicate' â€” repeat/drop frames (fast, slight jitter)
-      'blend'     â€” blend adjacent frames at fractional positions (smooth)
+      'duplicate' ?? repeat/drop frames (fast, slight jitter)
+      'blend'     ?? blend adjacent frames at fractional positions (smooth)
     """
     if abs(src_fps - dst_fps) < 0.01:
         return frames
@@ -261,7 +261,7 @@ def convert_fps(frames: torch.Tensor, src_fps: float, dst_fps: float,
         indices = [min(int(i * src_fps / dst_fps), n_src - 1) for i in range(n_dst)]
         return frames[indices]
 
-    # blend mode €” linear interpolation between adjacent frames
+    # blend mode ?? linear interpolation between adjacent frames
     out = []
     for i in range(n_dst):
         src_pos   = i * src_fps / dst_fps
@@ -273,7 +273,7 @@ def convert_fps(frames: torch.Tensor, src_fps: float, dst_fps: float,
     return torch.stack(out)
 
 
-# ”€”€ Simple image resize ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# ???? Simple image resize ??????????????????????????????????????????????????????????????????????????????????????????????????????????????
 
 def resize_frame(frame: torch.Tensor, h: int, w: int,
                  mode: str = "bilinear") -> torch.Tensor:

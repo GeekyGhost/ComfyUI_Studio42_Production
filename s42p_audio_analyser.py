@@ -1,30 +1,30 @@
 """
-S42 Production Suite â€” Audio Analyser
+S42 Production Suite ?? Audio Analyser
 ======================================
 Analyses one or two ComfyUI AUDIO inputs and produces a scored quality report
 with concrete, per-dimension recommendations pointing to S42P nodes.
 
 Ported from ULM Audio Analyser (GeekyGhost) with the following changes:
-  â€¢ Recommendations rewritten to reference S42P node names + parameters
-  â€¢ Category updated to S42 Production Suite
-  â€¢ Node/display names updated to S42P namespace
-  â€¢ _NumpyEncoder added for safe JSON serialisation
-  â€¢ Scoring thresholds unchanged (calibrated against real AceStep 1.5 output)
+  ? Recommendations rewritten to reference S42P node names + parameters
+  ? Category updated to S42 Production Suite
+  ? Node/display names updated to S42P namespace
+  ? _NumpyEncoder added for safe JSON serialisation
+  ? Scoring thresholds unchanged (calibrated against real AceStep 1.5 output)
 
-METRIC â†’ S42P NODE MAPPING:
-  Dynamic Range       â†’ S42P Dynamics Processor (output_gain, output_limiter)
-  Spectral Balance    â†’ S42P Parametric EQ (low_shelf / high_shelf / bands)
-  HF Presence         â†’ S42P Parametric EQ (high_shelf, presence band ~5kHz)
-  Transient Clarity   â†’ S42P Dynamics Processor (attack/release times)
-  Perceived Loudness  â†’ S42P Mastering Chain (lufs_preset / output_gain)
-  Rhythmic Coherence  â†’ S42P Beat Analyzer (informational)
-  Sub-Bass Control    â†’ S42P Parametric EQ (high_pass, low_shelf)
-  Stereo Image        â†’ S42P Mastering Chain (stereo_width)
+METRIC ?? S42P NODE MAPPING:
+  Dynamic Range       ?? S42P Dynamics Processor (output_gain, output_limiter)
+  Spectral Balance    ?? S42P Parametric EQ (low_shelf / high_shelf / bands)
+  HF Presence         ?? S42P Parametric EQ (high_shelf, presence band ~5kHz)
+  Transient Clarity   ?? S42P Dynamics Processor (attack/release times)
+  Perceived Loudness  ?? S42P Mastering Chain (lufs_preset / output_gain)
+  Rhythmic Coherence  ?? S42P Beat Analyzer (informational)
+  Sub-Bass Control    ?? S42P Parametric EQ (high_pass, low_shelf)
+  Stereo Image        ?? S42P Mastering Chain (stereo_width)
 
 DESIGN CONSTRAINTS:
-  â€¢ numpy + scipy only â€” guaranteed present in any ComfyUI install
-  â€¢ ComfyUI AUDIO: {"waveform": tensor[B,C,N], "sample_rate": int}
-  â€¢ All scoring thresholds calibrated against real AceStep 1.5 output
+  ? numpy + scipy only ?? guaranteed present in any ComfyUI install
+  ? ComfyUI AUDIO: {"waveform": tensor[B,C,N], "sample_rate": int}
+  ? All scoring thresholds calibrated against real AceStep 1.5 output
 
 Python 3.12 | ComfyUI Portable
 """
@@ -40,7 +40,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# ”€”€ JSON encoder ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# ???? JSON encoder ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 
 class _NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -51,26 +51,26 @@ class _NumpyEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
-# ”€”€ Waveform helpers ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# ???? Waveform helpers ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 
 def _to_mono(waveform) -> np.ndarray:
-    """[B,C,N] tensor or ndarray †’ mono float32 [N]."""
+    """[B,C,N] tensor or ndarray ?? mono float32 [N]."""
     arr = waveform.numpy() if hasattr(waveform, 'numpy') else np.asarray(waveform)
     return arr.mean(axis=(0, 1)).astype(np.float32)
 
 def _to_stereo(waveform) -> np.ndarray:
-    """[B,C,N] †’ [C,N] float32."""
+    """[B,C,N] ?? [C,N] float32."""
     arr = waveform.numpy() if hasattr(waveform, 'numpy') else np.asarray(waveform)
     return arr[0].astype(np.float32)
 
 
-# ”€”€ Core DSP ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# ???? Core DSP ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 
 def _stft_spectrum(y: np.ndarray, sr: int, n_fft: int = 4096, hop: int = 1024):
     """
     STFT with scaling='spectrum' so magnitudes are comparable to time-domain
-    amplitude. Without this, scipy returns spectral density (V/âˆšHz) which
-    makes all band energies appear ~1000Ã— smaller than expected.
+    amplitude. Without this, scipy returns spectral density (V/??Hz) which
+    makes all band energies appear ~1000? smaller than expected.
     """
     f, t, Zxx = sp.stft(
         y.astype(np.float32), fs=sr,
@@ -109,7 +109,7 @@ def _crest_sections(y: np.ndarray, sr: int, section_sec: float = 1.0) -> np.ndar
 
 
 def _band_pct(mag: np.ndarray, freqs: np.ndarray) -> dict:
-    """Band energy percentages (sum ‰ˆ 100%)."""
+    """Band energy percentages (sum ?? 100%)."""
     bands = [
         (20,    80,    'sub'),
         (80,    300,   'bass'),
@@ -138,7 +138,7 @@ def _envelope_autocorr(y: np.ndarray, sr: int,
     """
     RMS amplitude envelope at hop_ms resolution.
     Beat-period envelope autocorr is the correct way to measure rhythmic
-    periodicity â€” raw waveform autocorr at any fixed lag is near-zero for
+    periodicity ?? raw waveform autocorr at any fixed lag is near-zero for
     all real music because the waveform oscillates at audio frequencies.
     """
     frame_n = int(frame_ms / 1000 * sr)
@@ -152,7 +152,7 @@ def _envelope_autocorr(y: np.ndarray, sr: int,
 
 def _estimate_bpm_and_coherence(env: np.ndarray,
                                  env_fps: float) -> Tuple[float, int, float]:
-    """BPM estimation via beat-period envelope autocorrelation (60€“200 BPM)."""
+    """BPM estimation via beat-period envelope autocorrelation (60??200 BPM)."""
     xn     = (env - env.mean()) / (env.std() + 1e-8)
     lo_lag = max(1, int(env_fps * 60.0 / 200.0))
     hi_lag = min(int(env_fps * 60.0 / 60.0), len(xn) - 2)
@@ -210,10 +210,10 @@ def _rms_envelope_1s(y: np.ndarray, sr: int) -> list:
             for i in range(0, len(y) - n, n)]
 
 
-# ”€”€ Scoring ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# ???? Scoring ??????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 
 def _score(value, lo_bad, lo_good, hi_good, hi_bad) -> float:
-    """Trapezoid scorer †’ 0€“10. Plateau [lo_good, hi_good] = 10."""
+    """Trapezoid scorer ?? 0??10. Plateau [lo_good, hi_good] = 10."""
     if lo_good <= value <= hi_good: return 10.0
     if value < lo_bad or value > hi_bad: return 0.0
     if value < lo_good:
@@ -229,7 +229,7 @@ def _score_low_best(value, excellent, good, bad) -> float:
     return  6.0 - 6.0 * (value - good)     / (bad  - good      + 1e-9)
 
 
-# ”€”€ Full analysis ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# ???? Full analysis ??????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 
 def _analyse(waveform, sr: int, label: str) -> dict:
     m      = _to_mono(waveform)
@@ -291,7 +291,7 @@ def _analyse(waveform, sr: int, label: str) -> dict:
     }
 
 
-# ”€”€ Recommendation engine ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# ???? Recommendation engine ??????????????????????????????????????????????????????????????????????????????????????????????????????????
 
 def _recommendations(d: dict) -> list:
     """
@@ -303,12 +303,12 @@ def _recommendations(d: dict) -> list:
     s    = d['scores']
     bp   = d['band_pct']
 
-    # ”€”€ Dynamic Range ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+    # ???? Dynamic Range ??????????????????????????????????????????????????????????????????????????????????????????????????????????????????
     cf = d['crest_factor']
     if s['dynamic_range'] < 4:
         if cf < 3.0:
             recs.append((1, 'S42P Dynamics Processor', 'low_ratio / mid_ratio',
-                f"OVER-COMPRESSED (crest={cf:.2f}). Reduce compression ratios â€” "
+                f"OVER-COMPRESSED (crest={cf:.2f}). Reduce compression ratios ?? "
                 f"try low_ratio=1.5, mid_ratio=1.5. Disable glue_enabled if active."))
         elif cf > 11.0:
             recs.append((1, 'S42P Mastering Chain', 'true_peak_ceiling + output_limiter',
@@ -317,15 +317,15 @@ def _recommendations(d: dict) -> list:
     elif s['dynamic_range'] < 6 and cf < 3.5:
         recs.append((2, 'S42P Dynamics Processor', 'low_ratio / mid_ratio',
             f"Slightly compressed (crest={cf:.2f}). "
-            f"Reduce band ratios slightly or increase low_threshold by 3â€“6 dB."))
+            f"Reduce band ratios slightly or increase low_threshold by 3??6 dB."))
 
-    # ”€”€ Spectral Balance ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+    # ???? Spectral Balance ????????????????????????????????????????????????????????????????????????????????????????????????????????????
     imbal = d['spectral_imbalance']
     sub   = bp['sub']
     if s['spectral_balance'] < 4:
         recs.append((1, 'S42P Parametric EQ', 'b1 (high_pass) + low_shelf',
             f"SEVERE SPECTRAL IMBALANCE ({imbal:.1f} dB std). "
-            f"Sub energy={sub:.1f}%. If sub-dominated: raise HP freq from 20â†’60Hz, "
+            f"Sub energy={sub:.1f}%. If sub-dominated: raise HP freq from 20??60Hz, "
             f"add low_shelf at 80Hz with -3 to -6 dB gain. "
             f"Then re-run analyser to verify."))
     elif s['spectral_balance'] < 6:
@@ -334,7 +334,7 @@ def _recommendations(d: dict) -> list:
             f"Gentle low_shelf cut (-2 dB at 100Hz) and high_shelf boost (+1.5 dB at 8kHz) "
             f"will flatten the curve."))
 
-    # ”€”€ HF Presence ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+    # ???? HF Presence ??????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
     hf = d['hf_score_val']
     if s['hf_presence'] < 4:
         if hf < 0.03:
@@ -352,7 +352,7 @@ def _recommendations(d: dict) -> list:
             f"Modest HF presence (hi_mid={bp['hi_mid']:.4f}%). "
             f"Gentle peak at 5kHz (+1.5 dB, Q=1.2) and exciter_drive=0.15 in Mastering Chain."))
 
-    # ”€”€ Transient Clarity ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+    # ???? Transient Clarity ??????????????????????????????????????????????????????????????????????????????????????????????????????????
     cf_std = d['crest_std']
     if s['transient_clarity'] < 4:
         if cf_std < 0.3:
@@ -362,18 +362,18 @@ def _recommendations(d: dict) -> list:
                 f"This lets transient peaks through before compression engages."))
         else:
             recs.append((1, 'S42P Dynamics Processor', 'low_release / mid_release',
-                f"ERRATIC TRANSIENTS (CF std={cf_std:.3f} â€” too spiky). "
+                f"ERRATIC TRANSIENTS (CF std={cf_std:.3f} ?? too spiky). "
                 f"Shorten release: low_release=60ms, mid_release=50ms. "
                 f"Engage glue_enabled with glue_ratio=2.0."))
 
-    # ”€”€ Perceived Loudness ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+    # ???? Perceived Loudness ????????????????????????????????????????????????????????????????????????????????????????????????????????
     lufs = d['lufs']
     if s['perceived_loudness'] < 4:
         if lufs < -22.0:
             gain = round(-14.0 - lufs, 1)
             recs.append((1, 'S42P Mastering Chain', 'lufs_preset / manual_lufs_target',
                 f"TOO QUIET ({lufs:.1f} LUFS, streaming target -14). "
-                f"Set lufs_preset='Streaming â€” Spotify / Apple Music (-14 LUFS)' "
+                f"Set lufs_preset='Streaming ?? Spotify / Apple Music (-14 LUFS)' "
                 f"OR manual_lufs_target={-14.0:.1f} for ~{gain:+.1f} dB gain."))
         else:
             recs.append((1, 'S42P Mastering Chain', 'manual_lufs_target + true_peak_ceiling',
@@ -386,7 +386,7 @@ def _recommendations(d: dict) -> list:
             f"Loudness {lufs:.1f} LUFS (streaming target -14). "
             f"A {gain_nudge:+.1f} dB adjustment via lufs_preset would hit target."))
 
-    # ”€”€ Rhythmic Coherence ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+    # ???? Rhythmic Coherence ????????????????????????????????????????????????????????????????????????????????????????????????????????
     bpm   = d['bpm_estimate']
     b_ac  = d['beat_autocorr']
     onset = d['onset_rate']
@@ -399,9 +399,9 @@ def _recommendations(d: dict) -> list:
     else:
         recs.append((3, 'INFO', 'rhythmic_coherence',
             f"Good rhythmic lock (beat autocorr={b_ac:.3f} @ ~{bpm:.0f} BPM). "
-            f"Beat structure well-defined â€” no intervention needed."))
+            f"Beat structure well-defined ?? no intervention needed."))
 
-    # ”€”€ Sub-Bass Control ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+    # ???? Sub-Bass Control ????????????????????????????????????????????????????????????????????????????????????????????????????????????
     if s['sub_bass_control'] < 4:
         if sub > 88.0:
             recs.append((1, 'S42P Parametric EQ', 'b1 (high_pass freq)',
@@ -414,7 +414,7 @@ def _recommendations(d: dict) -> list:
                 f"Lower or disable the high_pass (set to 20Hz / bypass). "
                 f"Add low_shelf at 80Hz with +2 dB."))
 
-    # ”€”€ Stereo Image ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+    # ???? Stereo Image ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
     lr = d['lr_correlation']
     if s['stereo_image'] < 5:
         if lr > 0.97:
@@ -424,10 +424,10 @@ def _recommendations(d: dict) -> list:
                 f"Normal for mono sources or centre-panned vocals."))
         elif lr < 0.2:
             recs.append((2, 'S42P Mastering Chain', 'stereo_width',
-                f"Low L/R correlation ({lr:.3f}) â€” possible phase issue. "
+                f"Low L/R correlation ({lr:.3f}) ?? possible phase issue. "
                 f"Reduce stereo_width toward 1.0 in Mastering Chain."))
 
-    # ”€”€ Content-aware suggestion ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+    # ???? Content-aware suggestion ????????????????????????????????????????????????????????????????????????????????????????????
     if onset > 7.0 and s['transient_clarity'] >= 7:
         recs.append((3, 'S42P Dynamics Processor', 'mode / attack settings',
             f"Percussive content ({onset:.1f} onsets/s) with strong transients. "
@@ -442,15 +442,15 @@ def _recommendations(d: dict) -> list:
     return recs
 
 
-# ”€”€ Report formatter ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# ???? Report formatter ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 
 def _bar(score, width=10):
     n = max(0, min(width, int(round(score / 10.0 * width))))
-    return '[' + 'â–ˆ' * n + 'â–‘' * (width - n) + ']'
+    return '[' + '??' * n + '??' * (width - n) + ']'
 
 def _bband(pct, width=22):
     n = max(0, min(width, int(round(pct / 100.0 * width))))
-    return 'â–ˆ' * n + 'â–‘' * (width - n)
+    return '??' * n + '??' * (width - n)
 
 def _wrap(text, prefix, width=62):
     words = text.split()
@@ -466,9 +466,9 @@ def _wrap(text, prefix, width=62):
     return '\n'.join(lines)
 
 def _sep(title='', width=62):
-    if not title: return 'â”€' * width
+    if not title: return '??' * width
     pad = width - len(title) - 4
-    return f'â”€â”€ {title} ' + 'â”€' * max(0, pad)
+    return f'???? {title} ' + '??' * max(0, pad)
 
 _SCORE_LABELS = {
     'dynamic_range':      'Dynamic Range      ',
@@ -486,16 +486,16 @@ def _format_report(d_a: dict, d_b: Optional[dict] = None,
                    xcorr: Optional[float] = None) -> str:
     W = 62
     L = []
-    L += ['â•' * W,
-          '  S42P AUDIO ANALYSER  Â·  S42 Production Suite ðŸ”¬',
-          'â•' * W]
+    L += ['?' * W,
+          '  S42P AUDIO ANALYSER  .  S42 Production Suite ??',
+          '?' * W]
 
     def scores_block(d):
         L.append(_sep(f'SCORES  [{d["label"]}]'))
         for k, lbl in _SCORE_LABELS.items():
             v = d['scores'][k]
             L.append(f'  {lbl}  {_bar(v)} {v:4.1f}/10')
-        L.append('  ' + 'â”€' * 56)
+        L.append('  ' + '??' * 56)
         v = d['overall_score']
         L.append(f'  {"OVERALL":<22s}  {_bar(v)} {v:4.1f}/10')
 
@@ -508,11 +508,11 @@ def _format_report(d_a: dict, d_b: Optional[dict] = None,
             f'  RMS               {d["rms"]:.4f}  ({rms_db:.1f} dBFS)',
             f'  Peak              {d["peak"]:.4f}  ({peak_db:.1f} dBFS)',
             f'  LUFS (K-weighted) {d["lufs"]:.2f}',
-            f'  Crest Factor      {d["crest_factor"]:.2f}  (Ïƒ/s={d["crest_std"]:.2f})',
+            f'  Crest Factor      {d["crest_factor"]:.2f}  (?/s={d["crest_std"]:.2f})',
             f'  Est. BPM          {d["bpm_estimate"]:.1f}  (beat autocorr={d["beat_autocorr"]:.3f})',
             f'  Onset Rate        {d["onset_rate"]:.1f}/s',
             f'  L/R Correlation   {d["lr_correlation"]:.3f}',
-            f'  Spec Centroid     {d["sc_mean"]:.0f} Hz  (Ïƒ={d["sc_std"]:.0f})',
+            f'  Spec Centroid     {d["sc_mean"]:.0f} Hz  (?={d["sc_std"]:.0f})',
             f'  Spec Imbalance    {d["spectral_imbalance"]:.1f} dB std',
             f'  HF Score Val      {d["hf_score_val"]:.5f}  (hi_mid={d["band_pct"]["hi_mid"]:.4f}%)',
         ])
@@ -560,51 +560,51 @@ def _format_report(d_a: dict, d_b: Optional[dict] = None,
         for k, lbl in _SCORE_LABELS.items():
             sa, sb = d_a['scores'][k], d_b['scores'][k]
             delta  = sb - sa
-            arr    = 'â–²' if delta > 0.3 else ('â–¼' if delta < -0.3 else 'â•')
-            tag    = 'â† B wins' if delta > 0.5 else ('â† A wins' if delta < -0.5 else '')
+            arr    = '?' if delta > 0.3 else ('?' if delta < -0.3 else '?')
+            tag    = '? B wins' if delta > 0.5 else ('? A wins' if delta < -0.5 else '')
             L.append(f'  {lbl}  A:{sa:4.1f}  B:{sb:4.1f}  {arr}{abs(delta):.1f}  {tag}')
-        L.append('  ' + 'â”€' * 56)
+        L.append('  ' + '??' * 56)
         oa, ob = d_a['overall_score'], d_b['overall_score']
         dov = ob - oa
         win = 'B' if dov > 0.2 else ('A' if dov < -0.2 else 'TIE')
-        L.append(f'  {"OVERALL":<20s}  A:{oa:4.1f}  B:{ob:4.1f}  Î”{dov:+.1f}  â†’ {win}')
+        L.append(f'  {"OVERALL":<20s}  A:{oa:4.1f}  B:{ob:4.1f}  ?{dov:+.1f}  ?? {win}')
 
     L.append('')
     L.append(_sep('RECOMMENDATIONS'))
     pairs = [(d_a, d_a['label'])] + ([(d_b, d_b['label'])] if d_b else [])
     for d, tag in pairs:
         recs = _recommendations(d)
-        L.append(f'  â–¸ {tag}')
+        L.append(f'  ? {tag}')
         if not recs:
             L.append('    No critical issues. Output quality is acceptable.')
         else:
             for pri, node, param, msg in recs:
-                pri_lbl = {1: 'âš  HIGH', 2: 'Â· MED ', 3: 'Â· INFO'}[pri]
+                pri_lbl = {1: '? HIGH', 2: '. MED ', 3: '. INFO'}[pri]
                 L.append(f'  {pri_lbl}  {node}')
-                L.append(f'          â””â”€ {param}')
+                L.append(f'          ???? {param}')
                 L.append(_wrap(msg, '             '))
         L.append('')
 
-    L.append('â•' * W)
+    L.append('?' * W)
     return '\n'.join(L)
 
 
-# ”€”€ ComfyUI Node ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# ???? ComfyUI Node ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 
-CATEGORY = "S42 Production Suite ðŸ”¬ Analysis"
+CATEGORY = "S42 Production Suite/Audio Analysis"
 
 
 class S42PAudioAnalyser:
     """
-    S42P Audio Analyser â€” analyse one or two audio inputs and produce a
+    S42P Audio Analyser ?? analyse one or two audio inputs and produce a
     scored quality report with concrete S42P node parameter recommendations.
 
     Outputs:
-      report_text â€” human-readable scored report
-      json_data   â€” machine-readable full analysis
-      score_a     â€” overall quality 0.0â€“10.0
-      score_b     â€” overall quality 0.0â€“10.0 (-1.0 if audio_b not connected)
-      winner      â€” "A", "B", "TIE", or "N/A"
+      report_text ?? human-readable scored report
+      json_data   ?? machine-readable full analysis
+      score_a     ?? overall quality 0.0??10.0
+      score_b     ?? overall quality 0.0??10.0 (-1.0 if audio_b not connected)
+      winner      ?? "A", "B", "TIE", or "N/A"
     """
 
     @classmethod
@@ -683,5 +683,5 @@ NODE_CLASS_MAPPINGS = {
     "S42PAudioAnalyser": S42PAudioAnalyser
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "S42PAudioAnalyser": "S42P Audio Analyser ðŸ”¬"
+    "S42PAudioAnalyser": "S42P Audio Analyser ??"
 }

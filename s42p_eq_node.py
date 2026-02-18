@@ -1,10 +1,10 @@
 """
-S42 Production Suite — Parametric EQ Node
+S42 Production Suite ?? Parametric EQ Node
 ==========================================
 8-band parametric equalizer with full per-band control.
 Uses scipy sosfilt (second-order sections) for stable, accurate filtering.
 
-Bands: High-Pass → Low-Shelf → 4x Peak/Notch → High-Shelf → Low-Pass
+Bands: High-Pass ??? Low-Shelf ??? 4x Peak/Notch ??? High-Shelf ??? Low-Pass
 All filters are zero-latency (causal), 2nd-order Butterworth/peaking designs.
 
 Python 3.12 | ComfyUI Portable | scipy required
@@ -31,7 +31,6 @@ class _NumpyEncoder(json.JSONEncoder):
             return bool(obj)
         return super().default(obj)
 
-
 try:
     import scipy.signal as sig
     SCIPY_AVAILABLE = True
@@ -39,15 +38,16 @@ except ImportError:
     SCIPY_AVAILABLE = False
     logger.error("scipy is required for the Parametric EQ node. Install with: pip install scipy")
 
+# Pull in shared utils (relative import works because __init__.py adds parent to path)
 from s42p_audio_utils import (
     audio_from_comfy, audio_to_comfy, ensure_stereo, ensure_float32,
     rms_db, peak_db
 )
 
-CATEGORY = "S42 Production Suite \U0001f39b\ufe0f Audio Mastering"
+CATEGORY = "S42 Production Suite/Audio Mastering"
 
 
-# ── DSP: individual filter builders ──────────────────────────────────────────
+# ???? DSP: individual filter builders ????????????????????????????????????????????????????????????????????????????????????
 
 def _highpass_sos(freq: float, sr: int, order: int = 2) -> np.ndarray:
     nyq = sr / 2.0
@@ -136,13 +136,13 @@ def _apply_sos(audio: np.ndarray, sos: np.ndarray) -> np.ndarray:
     return out
 
 
-# ── Node ──────────────────────────────────────────────────────────────────────
+# ???? Node ??????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 
 class S42PParametricEQ:
     """
-    S42P Parametric EQ
-    8-band parametric equalizer — the cornerstone of any mastering chain.
-    Route AceStep music or vocal audio through this before compression.
+    ? S42P Parametric EQ
+    8-band parametric equalizer ?? the cornerstone of any mastering chain.
+    Route your AceStep music or vocal audio through this before compression.
     Each band can be individually enabled/disabled.
     """
 
@@ -150,12 +150,13 @@ class S42PParametricEQ:
 
     @classmethod
     def INPUT_TYPES(cls):
-        freq_tip   = lambda lo, hi: f"Center/cutoff frequency in Hz. Range {lo}\u2013{hi} Hz."
-        gain_tip   = "Gain in dB. Positive = boost, negative = cut. \u00b118 dB range. Only applies to peak/shelf bands."
+        # Reusable tooltip fragments
+        freq_tip   = lambda lo, hi: f"Center/cutoff frequency in Hz. Range {lo}???{hi}Hz. Lower = darker, higher = brighter."
+        gain_tip   = "Gain in dB. Positive = boost, negative = cut. ?+/-18dB range. Only applies to peak/shelf bands."
         q_tip      = "Q factor (bandwidth). Low Q = wide, musical. High Q = narrow, surgical. 0.1=very wide, 10=very narrow."
-        type_tip   = ("Band type: Peak=boost/cut at frequency. Notch=deep cut. "
-                      "Low/High Shelf=gentle tilt. High/Low Pass=remove a frequency range. Bypass=off.")
-        enable_tip = "Enable or disable this band. Disabled bands pass audio unchanged."
+        type_tip   = ("Band type. Peak=boost/cut at frequency. Notch=deep cut. "
+                      "Low/High Shelf=gentle tilt. High/Low Pass=remove a range entirely. Bypass=disable band.")
+        enable_tip = "Enable or disable this band entirely. Disabled bands pass audio unchanged."
 
         def band(label: str, freq: float, gain: float, q: float,
                  btype: str, freq_lo: int, freq_hi: int) -> dict:
@@ -188,45 +189,48 @@ class S42PParametricEQ:
         return {
             "required": {
                 "audio": ("AUDIO", {
-                    "tooltip": "Input audio to equalize. Accepts any ComfyUI AUDIO output."
+                    "tooltip": "Input audio to equalize. Accepts any ComfyUI AUDIO output (mixer, loader, TTS, etc)."
                 }),
                 "output_gain": ("FLOAT", {
                     "default": 0.0, "min": -12.0, "max": 12.0,
                     "step": 0.1, "display": "slider",
-                    "tooltip": ("Master output gain after all EQ bands. "
-                                "Use to compensate for loudness changes from boosting. "
-                                "Trim here to prevent clipping after heavy boosts.")
+                    "tooltip": ("Master output gain applied after all EQ bands. "
+                                "Use to compensate for loudness changes caused by boosting. "
+                                "Tip: if you boosted a lot, trim here to prevent clipping.")
                 }),
                 "oversampling": (["1x", "2x", "4x"], {
                     "default": "1x",
-                    "tooltip": ("Oversample EQ processing to reduce aliasing at high frequencies. "
-                                "2x or 4x recommended for material with lots of highs. "
-                                "Higher = better quality, slower.")
+                    "tooltip": ("Oversample the EQ processing to reduce aliasing artifacts at high frequencies. "
+                                "2x or 4x recommended for material with lots of highs (cymbals, brightness). "
+                                "Higher = better quality but slower.")
                 }),
             },
             "optional": {
+                # ???? Preset Loader input ????????????????????????????????????????????????????????????????????????????????????
                 "preset_json": ("STRING", {
                     "forceInput": True,
-                    "tooltip": ("Connect preset_json from S42P EQ Preset Loader. "
-                                "Preset gains override matching band gains. "
-                                "hp_hz from preset sets b1 high-pass frequency if > 0.")
+                    "tooltip": (
+                        "Connect preset_json output from S42P EQ Preset Loader here. "
+                        "Preset band gains OVERRIDE matching band gains below. "
+                        "hp_hz from preset also sets b1 high-pass frequency if > 0."
+                    )
                 }),
-                # Band 1 — High Pass (remove low-end rumble)
-                **band("b1", freq=80.0,    gain=0.0, q=0.707, btype="high_pass",  freq_lo=10,   freq_hi=2000),
-                # Band 2 — Low Shelf
-                **band("b2", freq=120.0,   gain=0.0, q=0.707, btype="low_shelf",  freq_lo=20,   freq_hi=500),
-                # Band 3 — Low-Mid Peak
-                **band("b3", freq=300.0,   gain=0.0, q=1.0,   btype="peak",       freq_lo=50,   freq_hi=2000),
-                # Band 4 — Mid Peak
-                **band("b4", freq=1000.0,  gain=0.0, q=1.0,   btype="peak",       freq_lo=200,  freq_hi=8000),
-                # Band 5 — Upper-Mid Peak
-                **band("b5", freq=3000.0,  gain=0.0, q=1.0,   btype="peak",       freq_lo=500,  freq_hi=16000),
-                # Band 6 — Presence Peak
-                **band("b6", freq=5000.0,  gain=0.0, q=1.0,   btype="peak",       freq_lo=1000, freq_hi=20000),
-                # Band 7 — High Shelf
-                **band("b7", freq=8000.0,  gain=0.0, q=0.707, btype="high_shelf", freq_lo=2000, freq_hi=20000),
-                # Band 8 — Low Pass (remove harsh top-end or noise)
-                **band("b8", freq=20000.0, gain=0.0, q=0.707, btype="low_pass",   freq_lo=4000, freq_hi=22000),
+                # Band 1 ?? High Pass (remove low-end rumble)
+                **band("b1", freq=80.0,   gain=0.0,  q=0.707, btype="high_pass",  freq_lo=10,   freq_hi=2000),
+                # Band 2 ?? Low Shelf
+                **band("b2", freq=120.0,  gain=0.0,  q=0.707, btype="low_shelf",  freq_lo=20,   freq_hi=500),
+                # Band 3 ?? Low-Mid Peak
+                **band("b3", freq=300.0,  gain=0.0,  q=1.0,   btype="peak",       freq_lo=50,   freq_hi=2000),
+                # Band 4 ?? Mid Peak
+                **band("b4", freq=1000.0, gain=0.0,  q=1.0,   btype="peak",       freq_lo=200,  freq_hi=8000),
+                # Band 5 ?? Upper-Mid Peak
+                **band("b5", freq=3000.0, gain=0.0,  q=1.0,   btype="peak",       freq_lo=500,  freq_hi=16000),
+                # Band 6 ?? Presence Peak
+                **band("b6", freq=5000.0, gain=0.0,  q=1.0,   btype="peak",       freq_lo=1000, freq_hi=20000),
+                # Band 7 ?? High Shelf
+                **band("b7", freq=8000.0, gain=0.0,  q=0.707, btype="high_shelf", freq_lo=2000, freq_hi=20000),
+                # Band 8 ?? Low Pass (remove harsh top-end or noise)
+                **band("b8", freq=20000.0,gain=0.0,  q=0.707, btype="low_pass",   freq_lo=4000, freq_hi=22000),
             }
         }
 
@@ -235,19 +239,22 @@ class S42PParametricEQ:
     FUNCTION      = "apply_eq"
     CATEGORY      = CATEGORY
 
+    # ???? main execute ??????????????????????????????????????????????????????????????????????????????????????????????????????????????????
+
     def apply_eq(self, audio: dict, output_gain: float = 0.0,
                  oversampling: str = "1x",
                  preset_json: str = None, **kwargs) -> Tuple[dict, str]:
 
         if not SCIPY_AVAILABLE:
-            logger.error("scipy required for EQ — returning audio unchanged")
+            logger.error("scipy required for EQ ?? returning audio unchanged")
             return (audio, json.dumps({"error": "scipy not installed"}))
 
-        # Apply preset overrides if provided
+        # ???? Apply preset overrides if provided ????????????????????????????????????????????????????
         if preset_json:
             try:
                 preset = json.loads(preset_json)
                 bands_db = preset.get("bands_db", {})
+                # Map preset band names to EQ band kwargs
                 band_map = {
                     "sub_bass":   ("b1_gain",),
                     "bass":       ("b2_gain",),
@@ -261,6 +268,7 @@ class S42PParametricEQ:
                     if preset_key in bands_db:
                         for ek in eq_keys:
                             kwargs[ek] = float(bands_db[preset_key])
+                # Apply hp_hz as b1 frequency override
                 hp_hz = float(preset.get("hp_hz", 0.0))
                 if hp_hz > 0.0:
                     kwargs["b1_freq"]    = hp_hz
@@ -290,6 +298,7 @@ class S42PParametricEQ:
             if not enabled or btype == "bypass":
                 continue
 
+            # Clamp freq safely away from DC and Nyquist
             nyq  = (sr / os_factor) / 2.0
             freq = float(np.clip(freq, 10.0, nyq * 0.98))
 
@@ -304,17 +313,20 @@ class S42PParametricEQ:
             except Exception as e:
                 logger.warning(f"Band {label} ({btype} @ {freq:.0f}Hz) failed: {e}")
 
+        # Downsample back if oversampled
         if os_factor > 1:
             arr, sr = self._downsample(arr, sr, os_factor)
 
+        # Output gain
         if output_gain != 0.0:
             arr = arr * (10.0 ** (output_gain / 20.0))
 
+        # Soft clip to prevent downstream clipping
         arr = np.clip(arr, -1.0, 1.0)
 
         info = {
-            "bands_applied":  len(bands_applied),
-            "band_details":   bands_applied,
+            "bands_applied": len(bands_applied),
+            "band_details":  bands_applied,
             "output_gain_db": output_gain,
             "oversampling":   oversampling,
             "sample_rate":    sr,
@@ -324,22 +336,30 @@ class S42PParametricEQ:
 
         return (audio_to_comfy(arr, sr), json.dumps(info, indent=2, cls=_NumpyEncoder))
 
+    # ???? helpers ??????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
+
     def _build_sos(self, btype: str, freq: float, gain: float,
                    q: float, sr: int) -> Optional[np.ndarray]:
-        if btype == "high_pass":  return _highpass_sos(freq, sr)
-        if btype == "low_pass":   return _lowpass_sos(freq, sr)
-        if btype == "low_shelf":  return _low_shelf_sos(freq, gain, sr)
-        if btype == "high_shelf": return _high_shelf_sos(freq, gain, sr)
+        if btype == "high_pass":
+            return _highpass_sos(freq, sr)
+        if btype == "low_pass":
+            return _lowpass_sos(freq, sr)
+        if btype == "low_shelf":
+            return _low_shelf_sos(freq, gain, sr)
+        if btype == "high_shelf":
+            return _high_shelf_sos(freq, gain, sr)
         if btype == "peak":
             if abs(gain) < 0.01:
-                return None
+                return None   # flat = skip
             return _peak_sos(freq, gain, q, sr)
-        if btype == "notch":      return _notch_sos(freq, q, sr)
+        if btype == "notch":
+            return _notch_sos(freq, q, sr)
         return None
 
     def _oversample(self, arr: np.ndarray, sr: int, factor: int) -> Tuple[np.ndarray, int]:
         try:
-            up_arr = sig.resample_poly(arr, factor, 1, axis=1)
+            import scipy.signal as s
+            up_arr = s.resample_poly(arr, factor, 1, axis=1)
             return up_arr.astype(np.float32), sr * factor
         except Exception as e:
             logger.warning(f"Oversampling failed: {e}")
@@ -347,19 +367,20 @@ class S42PParametricEQ:
 
     def _downsample(self, arr: np.ndarray, sr: int, factor: int) -> Tuple[np.ndarray, int]:
         try:
-            down_arr = sig.resample_poly(arr, 1, factor, axis=1)
+            import scipy.signal as s
+            down_arr = s.resample_poly(arr, 1, factor, axis=1)
             return down_arr.astype(np.float32), sr // factor
         except Exception as e:
             logger.warning(f"Downsampling failed: {e}")
             return arr, sr
 
 
-# ── ComfyUI registration ──────────────────────────────────────────────────────
+# ???? ComfyUI registration ????????????????????????????????????????????????????????????????????????????????????????????????????????????
 
 NODE_CLASS_MAPPINGS = {
     "S42PParametricEQ": S42PParametricEQ,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "S42PParametricEQ": "\U0001f39b\ufe0f S42P Parametric EQ",
+    "S42PParametricEQ": "? S42P Parametric EQ",
 }

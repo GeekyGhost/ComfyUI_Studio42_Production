@@ -1,32 +1,32 @@
 """
-S42 Production Suite â€” Latent Enhancer
+S42 Production Suite ?? Latent Enhancer
 ========================================
 Applies research-backed spectral balancing to AceStep latent tensors
-BEFORE VAE decode. Operates in latent space â€” changes affect the decoded
+BEFORE VAE decode. Operates in latent space ?? changes affect the decoded
 audio's spectral distribution without any audio-domain signal processing.
 
 WHAT THIS FIXES (from S42P Audio Analyser scores):
-  Spectral Balance <9.0  â†’ Perceptual Balance mode (K-weighted channel balancing)
-  HF Presence <9.0       â†’ SVD Enhance mode (boosts fine-grain latent attributes)
-  Both issues            â†’ Industry Standard mode (recommended)
+  Spectral Balance <9.0  ?? Perceptual Balance mode (K-weighted channel balancing)
+  HF Presence <9.0       ?? SVD Enhance mode (boosts fine-grain latent attributes)
+  Both issues            ?? Industry Standard mode (recommended)
 
 WHEN TO USE THIS vs S42P Mastering Chain:
-  Latent Enhancer  â€” runs before VAEDecode, modifies the latent representation.
+  Latent Enhancer  ?? runs before VAEDecode, modifies the latent representation.
                      Best for structural spectral balance issues (channel energy
                      imbalance intrinsic to the AceStep model output).
-  Mastering Chain  â€” runs after VAEDecode on decoded audio. Best for loudness
+  Mastering Chain  ?? runs after VAEDecode on decoded audio. Best for loudness
                      targeting, limiting, harmonic excitation, stereo width.
-  They are complementary â€” use both in sequence when needed.
+  They are complementary ?? use both in sequence when needed.
 
 PLACEMENT IN WORKFLOW:
-  KSampler â†’ S42P Latent Enhancer â†’ VAEDecode â†’ S42P Mastering Chain â†’ Save
+  KSampler ?? S42P Latent Enhancer ?? VAEDecode ?? S42P Mastering Chain ?? Save
 
 RESEARCH FOUNDATIONS:
-  â€¢ AceStep 1.5: 64-dim latent at 25Hz (512Ã— compression from 48kHz stereo)
-  â€¢ SVD attribute discovery (arXiv 2502.02225): high singular values = fine-grain
+  ? AceStep 1.5: 64-dim latent at 25Hz (512? compression from 48kHz stereo)
+  ? SVD attribute discovery (arXiv 2502.02225): high singular values = fine-grain
     attributes (texture, transients, air); low = coarse (energy, bass, structure)
-  â€¢ Smooth Diffusion (CVPR 2024): Lipschitz continuity via avg-pool regularisation
-  â€¢ ITU-R BS.1770 K-weighting: perceptual loudness curves adapted for channel
+  ? Smooth Diffusion (CVPR 2024): Lipschitz continuity via avg-pool regularisation
+  ? ITU-R BS.1770 K-weighting: perceptual loudness curves adapted for channel
     importance weighting across the 64-channel latent space
 
 Python 3.12 | ComfyUI Portable | Requires torch (always available)
@@ -38,31 +38,31 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-CATEGORY = "S42 Production Suite ðŸŽ›ï¸ Latent"
+CATEGORY = "S42 Production Suite/Latent"
 
 
 class S42PLatentEnhancer:
     """
-    S42P Latent Enhancer â€” spectral balance correction in latent space.
+    S42P Latent Enhancer ?? spectral balance correction in latent space.
 
     Analyses the 64-dimensional AceStep latent for channel energy imbalance
     and applies targeted corrections before VAE decode. Works best when
     S42P Audio Analyser reports Spectral Balance or HF Presence below 9.0.
 
     Modes:
-      Industry Standard  â€” Perceptual balance + SVD fine-grain boost + smooth
+      Industry Standard  ?? Perceptual balance + SVD fine-grain boost + smooth
                            regularisation. Recommended starting point.
-      Perceptual Balance â€” K-weighted channel balancing only. Surgical fix for
+      Perceptual Balance ?? K-weighted channel balancing only. Surgical fix for
                            spectral imbalance without touching transient content.
-      SVD Enhance        â€” Boosts high singular-value components (texture, air,
+      SVD Enhance        ?? Boosts high singular-value components (texture, air,
                            transients). Use when HF Presence is low.
-      Smooth Regularise  â€” Temporal smoothing via Lipschitz continuity. Reduces
+      Smooth Regularise  ?? Temporal smoothing via Lipschitz continuity. Reduces
                            latent discontinuities that can cause decode artefacts.
-      Multiband Compress â€” Frequency-band-dependent compression in latent space,
+      Multiband Compress ?? Frequency-band-dependent compression in latent space,
                            mimicking pro multiband compressors (different ratios
                            per perceptual band).
-      Full Studio Chain  â€” All techniques combined. Maximum correction.
-      Bypass             â€” Pass-through. No processing.
+      Full Studio Chain  ?? All techniques combined. Maximum correction.
+      Bypass             ?? Pass-through. No processing.
     """
 
     @classmethod
@@ -88,7 +88,7 @@ class S42PLatentEnhancer:
                         "SVD Enhance: Boost fine-grain attributes (texture, air, transients). "
                         "Smooth Regularise: Temporal smoothing to reduce decode artefacts. "
                         "Multiband Compress: Band-dependent dynamics control in latent space. "
-                        "Full Studio Chain: All techniques â€” maximum correction. "
+                        "Full Studio Chain: All techniques ?? maximum correction. "
                         "Bypass: No processing (use for A/B comparison)."
                     )
                 }),
@@ -115,7 +115,7 @@ class S42PLatentEnhancer:
                 "boost_fine_attributes": ("BOOLEAN", {
                     "default": True,
                     "tooltip": (
-                        "Boost high singular-value SVD components â€” adds texture, "
+                        "Boost high singular-value SVD components ?? adds texture, "
                         "transient detail, and air. Recommended when HF Presence <9.0. "
                         "Only active in Industry Standard and SVD Enhance modes."
                     )
@@ -173,7 +173,7 @@ class S42PLatentEnhancer:
         elif mode == "Multiband Compress":
             samples = self._multiband_compress(samples, strength)
 
-        # Safety clamp €” AceStep VAE is trained on 4.0 latent range
+        # Safety clamp ?? AceStep VAE is trained on +/-4.0 latent range
         samples = samples.clamp(-4.0, 4.0)
 
         logger.info(f"[S42P Latent Enhancer] mode={mode} strength={strength:.2f} "
@@ -181,17 +181,17 @@ class S42PLatentEnhancer:
 
         return ({"samples": samples},)
 
-    # ”€”€ K-weighted perceptual balance ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+    # ???? K-weighted perceptual balance ??????????????????????????????????????????????????????????????????????????????????
 
     def _get_k_weights(self, num_channels: int, device) -> torch.Tensor:
         """
         Perceptual importance weights for latent channels.
         For AceStep's 64-channel latent, approximate frequency groupings:
-          Ch  0-19  â†’ Sub/Bass  (20-300Hz)   weight ~0.80
-          Ch 20-30  â†’ Low-Mids  (300-1kHz)   weight ~1.00  (reference)
-          Ch 31-44  â†’ Mids      (1-3kHz)     weight ~1.20  (peak sensitivity)
-          Ch 45-55  â†’ Hi-Mids   (3-8kHz)     weight ~1.10
-          Ch 56-63  â†’ Highs     (8kHz+)      weight ~0.90
+          Ch  0-19  ?? Sub/Bass  (20-300Hz)   weight ~0.80
+          Ch 20-30  ?? Low-Mids  (300-1kHz)   weight ~1.00  (reference)
+          Ch 31-44  ?? Mids      (1-3kHz)     weight ~1.20  (peak sensitivity)
+          Ch 45-55  ?? Hi-Mids   (3-8kHz)     weight ~1.10
+          Ch 56-63  ?? Highs     (8kHz+)      weight ~0.90
         """
         w = torch.ones(num_channels, device=device, dtype=torch.float32)
         if num_channels == 64:
@@ -241,13 +241,13 @@ class S42PLatentEnhancer:
 
         return samples * scale
 
-    # ”€”€ SVD fine-grain attribute boost ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+    # ???? SVD fine-grain attribute boost ??????????????????????????????????????????????????????????????????????????????
 
     def _svd_enhance(self, samples: torch.Tensor, strength: float) -> torch.Tensor:
         """
         Boost high singular-value SVD components (fine-grain attributes).
-        Research: high SVs â†’ texture, transients, air.
-        Low SVs â†’ coarse structure (energy, bass, macro shape).
+        Research: high SVs ?? texture, transients, air.
+        Low SVs ?? coarse structure (energy, bass, macro shape).
         """
         if samples.ndim != 3:
             return samples
@@ -276,7 +276,7 @@ class S42PLatentEnhancer:
 
         return torch.stack(enhanced, dim=0)
 
-    # ”€”€ Temporal smooth regularisation ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+    # ???? Temporal smooth regularisation ????????????????????????????????????????????????????????????????????????????????
 
     def _smooth_regularise(self, samples: torch.Tensor, lam: float) -> torch.Tensor:
         """
@@ -294,15 +294,15 @@ class S42PLatentEnhancer:
 
         return samples * (1.0 - lam) + smoothed * lam
 
-    # ”€”€ Multiband latent compression ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+    # ???? Multiband latent compression ????????????????????????????????????????????????????????????????????????????????????
 
     def _multiband_compress(self, samples: torch.Tensor, strength: float) -> torch.Tensor:
         """
         Frequency-band-dependent compression in latent space.
         Ratios based on professional multiband mastering practice:
-          Sub/Bass ch  â†’ 1.5:1  (control boom)
-          Mid ch       â†’ 1.1:1  (preserve clarity)
-          High ch      â†’ 1.3:1  (control harshness)
+          Sub/Bass ch  ?? 1.5:1  (control boom)
+          Mid ch       ?? 1.1:1  (preserve clarity)
+          High ch      ?? 1.3:1  (control harshness)
         """
         C = samples.shape[1]
         if C == 64:
@@ -337,5 +337,5 @@ NODE_CLASS_MAPPINGS = {
     "S42PLatentEnhancer": S42PLatentEnhancer
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "S42PLatentEnhancer": "S42P Latent Enhancer âš¡"
+    "S42PLatentEnhancer": "S42P Latent Enhancer ?"
 }

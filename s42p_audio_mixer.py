@@ -1,25 +1,25 @@
 """
-S42 Production Suite â€” Audio Mixer
+S42 Production Suite ?? Audio Mixer
 =====================================
 Improved port of Studio42AudioMixer.
 
 4-channel audio mixer with per-channel:
-  â€¢ Volume (0.0â€“5.0)
-  â€¢ Pan (-1.0 left â†’ 0.0 centre â†’ 1.0 right)
-  â€¢ Start time offset (seconds)
-  â€¢ Fade in / fade out (seconds)
+  ? Volume (0.0??5.0)
+  ? Pan (-1.0 left ?? 0.0 centre ?? 1.0 right)
+  ? Start time offset (seconds)
+  ? Fade in / fade out (seconds)
 
 Plus master volume and output limiter.
 
-All DSP runs on CPU â€” no VRAM needed.
+All DSP runs on CPU ?? no VRAM needed.
 
 IMPROVEMENTS vs Studio42 original:
-  â€¢ Streamlined to 4 channels (was 6 â€” too many optional inputs = messy)
-  â€¢ Cleaner channel loop reduces code duplication
-  â€¢ Peak normalisation guard prevents output clipping
-  â€¢ Output sample_rate is taken from the first connected audio
-  â€¢ Handles mono/stereo/mismatched channel counts gracefully
-  â€¢ Added output_sample_rate override
+  ? Streamlined to 4 channels (was 6 ?? too many optional inputs = messy)
+  ? Cleaner channel loop reduces code duplication
+  ? Peak normalisation guard prevents output clipping
+  ? Output sample_rate is taken from the first connected audio
+  ? Handles mono/stereo/mismatched channel counts gracefully
+  ? Added output_sample_rate override
 
 Python 3.12 | ComfyUI Portable | torch only
 """
@@ -34,7 +34,7 @@ import numpy as np
 import torch
 
 logger = logging.getLogger(__name__)
-CATEGORY = "S42 Production Suite ðŸŽµ Audio"
+CATEGORY = "S42 Production Suite/Audio Mixer"
 
 
 def _db_to_lin(db: float) -> float:
@@ -65,7 +65,7 @@ def _apply_pan(wav: torch.Tensor, pan: float) -> torch.Tensor:
         return wav
 
     # Constant-power panning
-    angle    = (pan + 1.0) / 2.0 * math.pi / 2.0  # 0 â†’ Ï€/2
+    angle    = (pan + 1.0) / 2.0 * math.pi / 2.0  # 0 ?? ?/2
     left_g   = math.cos(angle)
     right_g  = math.sin(angle)
 
@@ -87,21 +87,21 @@ def _to_stereo(wav: torch.Tensor) -> torch.Tensor:
 
 class S42PAudioMixer:
     """
-    S42P Audio Mixer â€” mix up to 4 audio inputs with independent channel control.
+    S42P Audio Mixer ?? mix up to 4 audio inputs with independent channel control.
 
     Each channel has:
-      volume     â€“ Linear volume (1.0 = unity)
-      pan        â€“ Stereo pan (-1.0 = hard left, 0.0 = centre, 1.0 = hard right)
-      start_time â€“ Delay onset by N seconds
-      fade_in    â€“ Fade in duration (seconds)
-      fade_out   â€“ Fade out duration (seconds)
+      volume     ?? Linear volume (1.0 = unity)
+      pan        ?? Stereo pan (-1.0 = hard left, 0.0 = centre, 1.0 = hard right)
+      start_time ?? Delay onset by N seconds
+      fade_in    ?? Fade in duration (seconds)
+      fade_out   ?? Fade out duration (seconds)
 
     Master controls:
-      master_volume  â€“ Final output gain
-      output_limiter â€“ Soft-limit output to prevent clipping
+      master_volume  ?? Final output gain
+      output_limiter ?? Soft-limit output to prevent clipping
 
     Output is always stereo at the sample rate of channel 1 (or override).
-    Channels 2â€“4 are resampled to match if needed.
+    Channels 2??4 are resampled to match if needed.
     """
 
     @classmethod
@@ -118,10 +118,10 @@ class S42PAudioMixer:
         return {
             "required": {
                 "audio_1":           ("AUDIO", {"tooltip": "Channel 1 (main / lead)"}),
-                "ch1_volume":        ("FLOAT", {"default": 1.0, "min": 0.0, "max": 5.0, "step": 0.01, "tooltip": "Ch1 volume. 0=mute, 1.0=unity gain, 5.0=+14 dB boost."}),
-                "ch1_pan":           ("FLOAT", {"default": 0.0, "min": -1.0, "max": 1.0, "step": 0.05, "tooltip": "Ch1 pan. -1=full left, 0=centre, +1=full right."}),
-                "ch1_fade_in":       ("FLOAT", {"default": 0.0, "min": 0.0, "max": 30.0, "step": 0.1, "tooltip": "Ch1 fade-in duration in seconds."}),
-                "ch1_fade_out":      ("FLOAT", {"default": 0.0, "min": 0.0, "max": 30.0, "step": 0.1, "tooltip": "Ch1 fade-out duration in seconds."}),
+                "ch1_volume":        ("FLOAT", {"default": 1.0, "min": 0.0, "max": 5.0,  "step": 0.01}),
+                "ch1_pan":           ("FLOAT", {"default": 0.0, "min": -1.0, "max": 1.0,  "step": 0.05}),
+                "ch1_fade_in":       ("FLOAT", {"default": 0.0, "min": 0.0, "max": 30.0,  "step": 0.1}),
+                "ch1_fade_out":      ("FLOAT", {"default": 0.0, "min": 0.0, "max": 30.0,  "step": 0.1}),
                 "master_volume":     ("FLOAT", {"default": 1.0, "min": 0.0, "max": 3.0,   "step": 0.01,
                                                  "tooltip": "Master output gain."}),
                 "output_limiter":    ("BOOLEAN", {"default": True,
@@ -129,25 +129,25 @@ class S42PAudioMixer:
             },
             "optional": {
                 "audio_2":           ("AUDIO", {"tooltip": "Channel 2"}),
-                "ch2_volume":        ("FLOAT", {"default": 0.8, "min": 0.0, "max": 5.0, "step": 0.01, "tooltip": "Ch2 volume. 0=mute, 1.0=unity gain, 5.0=+14 dB boost."}),
-                "ch2_pan":           ("FLOAT", {"default": 0.0, "min": -1.0, "max": 1.0, "step": 0.05, "tooltip": "Ch2 pan. -1=full left, 0=centre, +1=full right."}),
-                "ch2_start_time":    ("FLOAT", {"default": 0.0, "min": 0.0, "max": 300.0, "step": 0.1, "tooltip": "Ch2 start-time offset in seconds. Delays when this clip enters the mix."}),
-                "ch2_fade_in":       ("FLOAT", {"default": 0.0, "min": 0.0, "max": 30.0, "step": 0.1, "tooltip": "Ch2 fade-in duration in seconds."}),
-                "ch2_fade_out":      ("FLOAT", {"default": 0.0, "min": 0.0, "max": 30.0, "step": 0.1, "tooltip": "Ch2 fade-out duration in seconds."}),
+                "ch2_volume":        ("FLOAT", {"default": 0.8, "min": 0.0, "max": 5.0,  "step": 0.01}),
+                "ch2_pan":           ("FLOAT", {"default": 0.0, "min": -1.0, "max": 1.0,  "step": 0.05}),
+                "ch2_start_time":    ("FLOAT", {"default": 0.0, "min": 0.0, "max": 300.0, "step": 0.1}),
+                "ch2_fade_in":       ("FLOAT", {"default": 0.0, "min": 0.0, "max": 30.0,  "step": 0.1}),
+                "ch2_fade_out":      ("FLOAT", {"default": 0.0, "min": 0.0, "max": 30.0,  "step": 0.1}),
 
                 "audio_3":           ("AUDIO", {"tooltip": "Channel 3"}),
-                "ch3_volume":        ("FLOAT", {"default": 0.6, "min": 0.0, "max": 5.0, "step": 0.01, "tooltip": "Ch3 volume. 0=mute, 1.0=unity gain, 5.0=+14 dB boost."}),
-                "ch3_pan":           ("FLOAT", {"default": 0.0, "min": -1.0, "max": 1.0, "step": 0.05, "tooltip": "Ch3 pan. -1=full left, 0=centre, +1=full right."}),
-                "ch3_start_time":    ("FLOAT", {"default": 0.0, "min": 0.0, "max": 300.0, "step": 0.1, "tooltip": "Ch3 start-time offset in seconds. Delays when this clip enters the mix."}),
-                "ch3_fade_in":       ("FLOAT", {"default": 0.0, "min": 0.0, "max": 30.0, "step": 0.1, "tooltip": "Ch3 fade-in duration in seconds."}),
-                "ch3_fade_out":      ("FLOAT", {"default": 0.0, "min": 0.0, "max": 30.0, "step": 0.1, "tooltip": "Ch3 fade-out duration in seconds."}),
+                "ch3_volume":        ("FLOAT", {"default": 0.6, "min": 0.0, "max": 5.0,  "step": 0.01}),
+                "ch3_pan":           ("FLOAT", {"default": 0.0, "min": -1.0, "max": 1.0,  "step": 0.05}),
+                "ch3_start_time":    ("FLOAT", {"default": 0.0, "min": 0.0, "max": 300.0, "step": 0.1}),
+                "ch3_fade_in":       ("FLOAT", {"default": 0.0, "min": 0.0, "max": 30.0,  "step": 0.1}),
+                "ch3_fade_out":      ("FLOAT", {"default": 0.0, "min": 0.0, "max": 30.0,  "step": 0.1}),
 
                 "audio_4":           ("AUDIO", {"tooltip": "Channel 4"}),
-                "ch4_volume":        ("FLOAT", {"default": 0.5, "min": 0.0, "max": 5.0, "step": 0.01, "tooltip": "Ch4 volume. 0=mute, 1.0=unity gain, 5.0=+14 dB boost."}),
-                "ch4_pan":           ("FLOAT", {"default": 0.0, "min": -1.0, "max": 1.0, "step": 0.05, "tooltip": "Ch4 pan. -1=full left, 0=centre, +1=full right."}),
-                "ch4_start_time":    ("FLOAT", {"default": 0.0, "min": 0.0, "max": 300.0, "step": 0.1, "tooltip": "Ch4 start-time offset in seconds. Delays when this clip enters the mix."}),
-                "ch4_fade_in":       ("FLOAT", {"default": 0.0, "min": 0.0, "max": 30.0, "step": 0.1, "tooltip": "Ch4 fade-in duration in seconds."}),
-                "ch4_fade_out":      ("FLOAT", {"default": 0.0, "min": 0.0, "max": 30.0, "step": 0.1, "tooltip": "Ch4 fade-out duration in seconds."}),
+                "ch4_volume":        ("FLOAT", {"default": 0.5, "min": 0.0, "max": 5.0,  "step": 0.01}),
+                "ch4_pan":           ("FLOAT", {"default": 0.0, "min": -1.0, "max": 1.0,  "step": 0.05}),
+                "ch4_start_time":    ("FLOAT", {"default": 0.0, "min": 0.0, "max": 300.0, "step": 0.1}),
+                "ch4_fade_in":       ("FLOAT", {"default": 0.0, "min": 0.0, "max": 30.0,  "step": 0.1}),
+                "ch4_fade_out":      ("FLOAT", {"default": 0.0, "min": 0.0, "max": 30.0,  "step": 0.1}),
             }
         }
 
@@ -161,7 +161,7 @@ class S42PAudioMixer:
         wav = audio_dict.get("waveform")
         sr  = int(audio_dict.get("sample_rate", 44100))
         if hasattr(wav, "shape") and wav.ndim == 3:
-            wav = wav[0]  # remove batch dim â†’ [C,N]
+            wav = wav[0]  # remove batch dim ?? [C,N]
         return wav.float(), sr
 
     def mix(self,
@@ -186,7 +186,7 @@ class S42PAudioMixer:
             ch4_fade_in: float = 0.0, ch4_fade_out: float = 0.0,
             ) -> tuple:
 
-        # ”€”€ Channel specs ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+        # ???? Channel specs ??????????????????????????????????????????????????????????????????????????????????????????????????
         channels = [
             (audio_1, ch1_volume, ch1_pan, 0.0,           ch1_fade_in, ch1_fade_out),
             (audio_2, ch2_volume, ch2_pan, ch2_start_time, ch2_fade_in, ch2_fade_out),
@@ -254,7 +254,7 @@ class S42PAudioMixer:
                 mix_buf = mix_buf / peak * 0.999
 
         print(f"[S42P AudioMixer] Mixed {sum(1 for a,*_ in channels if a is not None)} "
-              f"channels â†’ {total_n/sr:.1f}s @ {sr}Hz  "
+              f"channels ?? {total_n/sr:.1f}s @ {sr}Hz  "
               f"peak={float(mix_buf.abs().max()):.3f}")
 
         return ({"waveform": mix_buf.unsqueeze(0), "sample_rate": sr},)
@@ -264,5 +264,5 @@ NODE_CLASS_MAPPINGS = {
     "S42PAudioMixer": S42PAudioMixer,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "S42PAudioMixer": "S42P Audio Mixer ðŸŽšï¸",
+    "S42PAudioMixer": "S42P Audio Mixer ???",
 }

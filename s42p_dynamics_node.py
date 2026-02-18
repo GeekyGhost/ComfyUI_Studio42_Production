@@ -1,5 +1,5 @@
 """
-S42 Production Suite â€” Dynamics Processor Node
+S42 Production Suite ?? Dynamics Processor Node
 ===============================================
 Multiband compressor + broadband options with full sidechain support.
 3 frequency bands (Low / Mid / High) each with independent:
@@ -45,15 +45,15 @@ from s42p_audio_utils import (
     db_to_linear, linear_to_db, rms_db, peak_db, soft_limit
 )
 
-CATEGORY = "S42 Production Suite ðŸ”Š Dynamics"
+CATEGORY = "S42 Production Suite/Audio Mastering"
 
 
-# ”€”€ Crossover filter pair ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# ???? Crossover filter pair ????????????????????????????????????????????????????????????????????????????????????????????????????????
 
 def _crossover_pair(freq: float, sr: int, order: int = 4) -> Tuple[np.ndarray, np.ndarray]:
     """
     Linkwitz-Riley crossover: returns (lowpass_sos, highpass_sos).
-    LR-4 (order=4) is default â€” flat summed response, used in pro audio.
+    LR-4 (order=4) is default ?? flat summed response, used in pro audio.
     """
     nyq = sr / 2.0
     f   = float(np.clip(freq, 20.0, nyq * 0.98))
@@ -74,7 +74,7 @@ def _apply_sos_stereo(arr: np.ndarray, sos: np.ndarray) -> np.ndarray:
     return out
 
 
-# ”€”€ Core dynamics engine ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# ???? Core dynamics engine ??????????????????????????????????????????????????????????????????????????????????????????????????????????
 
 def _compute_gain_reduction(
     arr: np.ndarray,
@@ -130,7 +130,7 @@ def _compute_gain_reduction(
                 gain_db[i] = (thresh + (e - thresh) / ratio) - e
 
     elif mode == "expand":
-        # Downward expansion €” signals above threshold pass, below get attenuated
+        # Downward expansion ?? signals above threshold pass, below get attenuated
         for i in range(len(env_db)):
             e = env_db[i]
             if e >= thresh:
@@ -139,7 +139,7 @@ def _compute_gain_reduction(
                 gain_db[i] = (ratio - 1.0) * (e - thresh)
 
     elif mode == "gate":
-        # Hard gate €” signals below threshold get full attenuation (-80dB floor)
+        # Hard gate ?? signals below threshold get full attenuation (-80dB floor)
         for i in range(len(env_db)):
             e = env_db[i]
             if e >= thresh:
@@ -175,18 +175,18 @@ def _apply_dynamics_band(
     return out.astype(np.float32)
 
 
-# ”€”€ Node ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# ???? Node ??????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 
 class S42PDynamicsProcessor:
     """
-    ðŸ”Š S42P Dynamics Processor
+    ??? S42P Dynamics Processor
     3-band compressor/expander/gate with broadband glue compressor.
 
     Signal flow:
-    Input â†’ [Broadband Compressor] â†’ [Crossover Split] â†’
-        [Low Band Dynamics] â”€â”
-        [Mid Band Dynamics]  â”œâ”€ [Summed] â†’ [Limiter] â†’ Output
-        [High Band Dynamics] â”˜
+    Input ?? [Broadband Compressor] ?? [Crossover Split] ??
+        [Low Band Dynamics] ???
+        [Mid Band Dynamics]  ???? [Summed] ?? [Limiter] ?? Output
+        [High Band Dynamics] ??
 
     Use after the Parametric EQ, before the Mastering Chain.
     """
@@ -222,30 +222,30 @@ class S42PDynamicsProcessor:
                 f"{label}_attack": ("FLOAT", {
                     "default": 10.0, "min": 0.1, "max": 200.0,
                     "step": 0.5, "display": "slider",
-                    "tooltip": ("Attack time in milliseconds â€” how fast the compressor clamps down on a loud signal. "
+                    "tooltip": ("Attack time in milliseconds ?? how fast the compressor clamps down on a loud signal. "
                                 "Fast (1-5ms) catches transients tightly. "
                                 "Slow (30-100ms) lets transients through for punch and snap.")
                 }),
                 f"{label}_release": ("FLOAT", {
                     "default": 80.0, "min": 5.0, "max": 2000.0,
                     "step": 5.0, "display": "slider",
-                    "tooltip": ("Release time in milliseconds â€” how fast the compressor lets go after a loud signal. "
+                    "tooltip": ("Release time in milliseconds ?? how fast the compressor lets go after a loud signal. "
                                 "Too fast causes pumping. Too slow sounds squashed. "
-                                "80â€“300ms is typical for music.")
+                                "80??300ms is typical for music.")
                 }),
                 f"{label}_knee": ("FLOAT", {
                     "default": 3.0, "min": 0.0, "max": 12.0,
                     "step": 0.5, "display": "slider",
                     "tooltip": ("Soft knee width in dB. "
                                 "0 = hard knee (abrupt, more audible). "
-                                "3â€“6 = soft knee (gradual, transparent). "
+                                "3??6 = soft knee (gradual, transparent). "
                                 "Higher values sound more musical for most material.")
                 }),
                 f"{label}_makeup": ("FLOAT", {
                     "default": 0.0, "min": -12.0, "max": 24.0,
                     "step": 0.5, "display": "slider",
                     "tooltip": ("Makeup gain in dB applied after compression. "
-                                "Compression reduces level â€” use makeup to restore it. "
+                                "Compression reduces level ?? use makeup to restore it. "
                                 "Tip: match output level to input level for fair A/B comparison.")
                 }),
             }
@@ -260,14 +260,14 @@ class S42PDynamicsProcessor:
                     "default": 250.0, "min": 80.0, "max": 1000.0,
                     "step": 10.0, "display": "slider",
                     "tooltip": ("Crossover frequency between the Low and Mid bands in Hz. "
-                                "250Hz is a classic split â€” lows get bass/kick, mids get guitars/vocals. "
+                                "250Hz is a classic split ?? lows get bass/kick, mids get guitars/vocals. "
                                 "Adjust based on your material.")
                 }),
                 "mid_high_crossover": ("FLOAT", {
                     "default": 4000.0, "min": 1000.0, "max": 16000.0,
                     "step": 100.0, "display": "slider",
                     "tooltip": ("Crossover frequency between the Mid and High bands in Hz. "
-                                "4kHz is a classic split â€” highs get air/cymbals, mids get vocals/guitars. "
+                                "4kHz is a classic split ?? highs get air/cymbals, mids get vocals/guitars. "
                                 "Lower this to treat more of the high frequencies.")
                 }),
                 # Broadband glue compressor
@@ -286,8 +286,8 @@ class S42PDynamicsProcessor:
                 "glue_ratio": ("FLOAT", {
                     "default": 2.0, "min": 1.0, "max": 8.0,
                     "step": 0.1, "display": "slider",
-                    "tooltip": ("Ratio for the glue compressor. 1.5â€“2:1 is gentle glue. "
-                                "3â€“4:1 starts sounding noticeably compressed. Keep it subtle here.")
+                    "tooltip": ("Ratio for the glue compressor. 1.5??2:1 is gentle glue. "
+                                "3??4:1 starts sounding noticeably compressed. Keep it subtle here.")
                 }),
                 "glue_attack": ("FLOAT", {
                     "default": 30.0, "min": 1.0, "max": 200.0,
@@ -297,7 +297,7 @@ class S42PDynamicsProcessor:
                 "glue_release": ("FLOAT", {
                     "default": 200.0, "min": 10.0, "max": 2000.0,
                     "step": 10.0, "display": "slider",
-                    "tooltip": "Release for the glue compressor in ms. 150â€“300ms is typical for mix glue."
+                    "tooltip": "Release for the glue compressor in ms. 150??300ms is typical for mix glue."
                 }),
                 # Low band
                 **band_inputs("low",  "Low",  default_thresh=-24.0, default_ratio=3.0, default_mode="compress"),
@@ -434,12 +434,12 @@ class S42PDynamicsProcessor:
         return (audio_to_comfy(out, sr), json.dumps(info, indent=2, cls=_NumpyEncoder))
 
 
-# ”€”€ ComfyUI registration ”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€”€
+# ???? ComfyUI registration ????????????????????????????????????????????????????????????????????????????????????????????????????????????
 
 NODE_CLASS_MAPPINGS = {
     "S42PDynamicsProcessor": S42PDynamicsProcessor,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "S42PDynamicsProcessor": "ðŸ”Š S42P Dynamics Processor",
+    "S42PDynamicsProcessor": "??? S42P Dynamics Processor",
 }

@@ -373,4 +373,4 @@ Set `batch_size` to match your video frame count. Use `animate_batch=True` to ad
 ## License
 
 MIT — See LICENSE file.  
-Author: Studio42 (Willie G)
+Author: Studio42 (Willie Brain)

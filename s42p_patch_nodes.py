@@ -1,26 +1,26 @@
 """
-S42 Production Suite — Patch Lift & Drop
+S42 Production Suite ? Patch Lift & Drop
 =========================================
-Patch workflow: extract a region → edit it → replace it exactly where it was.
+Patch workflow: extract a region ? edit it ? replace it exactly where it was.
 
-S42P PATCH LIFT  — Extract a rectangular region from an image or video batch.
+S42P PATCH LIFT  ? Extract a rectangular region from an image or video batch.
                    Outputs the patch AND stores original coordinates for Drop.
 
-S42P PATCH DROP  — Place a (possibly modified) patch back at the exact pixel
+S42P PATCH DROP  ? Place a (possibly modified) patch back at the exact pixel
                    coordinates it was lifted from, with optional blend modes
                    and feathering for seamless integration.
 
 WORKFLOW:
-  Image/Video → [S42P Patch Lift] → patch → [your nodes] → [S42P Patch Drop]
-                       │  coord_data ─────────────────────────────→ │
-                       └─ original_image ─────────────────────────→ │
+  Image/Video ? [S42P Patch Lift] ? patch ? [your nodes] ? [S42P Patch Drop]
+                       ?  coord_data ?????????????????????????????? ?
+                       ?? original_image ?????????????????????????? ?
 
 IMPROVED vs Studio42 originals:
-  • Coord data carried as a compact JSON STRING (no separate INT outputs)
-  • Video batch handling with consistent coords across all frames
-  • Blend modes: replace, overlay, screen, multiply, soft_light
-  • Feather edge blending baked into Drop node (no separate mask needed)
-  • Handles out-of-bounds gracefully (clips to image boundary)
+  ? Coord data carried as a compact JSON STRING (no separate INT outputs)
+  ? Video batch handling with consistent coords across all frames
+  ? Blend modes: replace, overlay, screen, multiply, soft_light
+  ? Feather edge blending baked into Drop node (no separate mask needed)
+  ? Handles out-of-bounds gracefully (clips to image boundary)
 
 Python 3.12 | ComfyUI Portable | torch + Pillow
 """
@@ -41,13 +41,13 @@ except ImportError:
     PIL_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
-CATEGORY = "S42 Production Suite 🎨 Visual"
+CATEGORY = "S42 Production Suite/Utilities"
 
 
-# ── Helpers ────────────────────────────────────────────────────────────────
+# ?? Helpers ????????????????????????????????????????????????????????????????
 
 def _t2np(t: torch.Tensor) -> np.ndarray:
-    """[B,H,W,C] or [H,W,C] torch float32 → numpy uint8."""
+    """[B,H,W,C] or [H,W,C] torch float32 ? numpy uint8."""
     arr = t.cpu().float().numpy()
     if arr.ndim == 4:
         arr = arr[0]  # take first in batch
@@ -55,7 +55,7 @@ def _t2np(t: torch.Tensor) -> np.ndarray:
 
 
 def _np2t(arr: np.ndarray) -> torch.Tensor:
-    """HWC uint8 → [1,H,W,C] float32 tensor."""
+    """HWC uint8 ? [1,H,W,C] float32 tensor."""
     return torch.from_numpy(arr.astype(np.float32) / 255.0).unsqueeze(0)
 
 
@@ -96,11 +96,11 @@ def _make_feather_mask(w: int, h: int, feather: int) -> np.ndarray:
     return mask
 
 
-# ── PatchLift ─────────────────────────────────────────────────────────────
+# ?? PatchLift ?????????????????????????????????????????????????????????????
 
 class S42PPatchLift:
     """
-    S42P Patch Lift — extract a rectangular region from an image or video batch.
+    S42P Patch Lift ? extract a rectangular region from an image or video batch.
 
     The coord_data output (JSON STRING) stores all the information needed
     to place the patch back precisely with S42P Patch Drop.  Always wire
@@ -187,19 +187,19 @@ class S42PPatchLift:
         return (patch, image, coord_data)
 
 
-# ── PatchDrop ─────────────────────────────────────────────────────────────
+# ?? PatchDrop ?????????????????????????????????????????????????????????????
 
 class S42PPatchDrop:
     """
-    S42P Patch Drop — composite a (possibly modified) patch back onto the
+    S42P Patch Drop ? composite a (possibly modified) patch back onto the
     original image at the exact pixel coordinates stored in coord_data.
 
     BLEND MODES:
-      replace     – Direct pixel replacement (default)
-      multiply    – Darkening blend
-      screen      – Lightening blend
-      overlay     – Contrast-boosting blend
-      soft_light  – Gentle soft-light blend
+      replace     ? Direct pixel replacement (default)
+      multiply    ? Darkening blend
+      screen      ? Lightening blend
+      overlay     ? Contrast-boosting blend
+      soft_light  ? Gentle soft-light blend
 
     FEATHER EDGE: blends the patch edges smoothly into the background.
     Works on both single images and video batches.
@@ -213,7 +213,7 @@ class S42PPatchDrop:
                     "tooltip": "Original image from S42P Patch Lift (original_image output)."
                 }),
                 "patch": ("IMAGE", {
-                    "tooltip": "Modified patch to drop back. Can be any size — will be resized."
+                    "tooltip": "Modified patch to drop back. Can be any size ? will be resized."
                 }),
                 "coord_data": ("STRING", {
                     "forceInput": True,
@@ -351,6 +351,6 @@ NODE_CLASS_MAPPINGS = {
     "S42PPatchDrop":  S42PPatchDrop,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "S42PPatchLift": "S42P Patch Lift ✂️",
-    "S42PPatchDrop":  "S42P Patch Drop 📌",
+    "S42PPatchLift": "S42P Patch Lift ??",
+    "S42PPatchDrop":  "S42P Patch Drop ?",
 }
