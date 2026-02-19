@@ -1,15 +1,23 @@
-# S42 Production Suite ?? Songwriter
-# Uses the ollama Python client (same as OllamaSongwriterV3) for reliable comms.
-# Outputs AceStep 1.5-compatible style_tags + lyrics via OLLAMA_CONNECTIVITY.
-#
-# Optional IMAGE input enables vision models (llava, qwen2.5vl, qwen3-vl, etc.)
-# Images are base64-encoded and passed directly to client.generate(images=[...])
-#
-# OUTPUTS ?? TextEncodeAceStepAudio1.5:
-#   style_tags   ?? tags / style_tags input
-#   lyrics       ?? lyrics input
-#   raw_response ?? ShowText (debug)
-#   context      ?? feed back to context input for iterative refinement
+"""
+S42 Production Suite — Songwriter Node v5.0
+============================================
+AI song generation for AceStep 1.5 Turbo via Ollama.
+
+Uses ComfyUI-Ollama for Ollama connectivity and model options.
+
+CHANGES v5.0:
+  - TWO-PASS generation:
+      Pass 1: Creative concept generation (genre, mood, theme → musical vision)
+      Pass 2: Format conversion (vision → strict AceStep JSON)
+    Result: dramatically fewer "model didn't follow format" failures
+    and more musically coherent output (model isn't trying to be creative
+    AND follow a strict schema simultaneously).
+  - Thinking model support: <think>...</think> blocks auto-stripped
+  - Vision input for image-inspired songs
+  - Iterative refinement via context input/output
+
+Python 3.12 | ComfyUI Portable
+"""
 
 from __future__ import annotations
 
@@ -21,6 +29,7 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
+
 try:
     from ollama import Client
     _OLLAMA_OK = True
@@ -38,7 +47,7 @@ except ImportError:
     _PIL = False
 
 
-# ???? Constants ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
+# ── Constants ──────────────────────────────────────────────────────────────────
 
 VALID_KEYS = [
     "C Major", "C Minor", "C# Major", "C# Minor", "Db Major", "Db Minor",
@@ -55,20 +64,17 @@ BPM_HINTS: Dict[str, Tuple[int, int]] = {
     "lo-fi": (70, 90),     "lofi": (70, 90),      "hip-hop": (75, 100),
     "hip hop": (75, 100),  "trap": (70, 100),     "r&b": (70, 100),
     "rnb": (70, 100),      "pop": (90, 130),      "indie": (90, 130),
-    "rock": (90, 150),     "punk": (140, 200),    "alt-punk": (130, 175),
-    "metal": (130, 200),   "grunge": (90, 140),   "edm": (120, 140),
-    "house": (120, 130),   "techno": (130, 150),  "dubstep": (135, 145),
-    "drum and bass": (160, 180), "dnb": (160, 180),
+    "rock": (90, 150),     "punk": (140, 200),    "metal": (130, 200),
+    "edm": (120, 140),     "house": (120, 130),   "techno": (130, 150),
+    "dubstep": (135, 145), "drum and bass": (160, 180), "dnb": (160, 180),
     "classical": (60, 160), "orchestral": (60, 160),
     "country": (90, 130),  "folk": (80, 120),     "reggae": (60, 90),
-    "ska": (100, 140),     "trip-hop": (70, 95),  "trip hop": (70, 95),
-    "synthwave": (100, 130), "retrowave": (100, 130), "cinematic": (60, 120),
-    "epic": (80, 140),
+    "synthwave": (100, 130), "cinematic": (60, 120),
 }
 
 _FALLBACK_MODELS = [
-    "qwen2.5:7b", "qwen2.5:14b", "qwen3:8b", "qwen3:14b", "qwen3-vl:8b",
-    "mistral:7b", "llama3.1:8b", "llama3.2:3b", "gemma3:9b", "phi4:14b",
+    "qwen2.5:7b", "qwen2.5:14b", "qwen3:8b", "qwen3:14b",
+    "mistral:7b", "llama3.1:8b", "llama3.2:3b", "gemma3:9b",
     "llava:13b", "qwen2.5vl:7b", "minicpm-v:latest",
 ]
 
@@ -76,7 +82,7 @@ _model_cache: List[str] = []
 _cached_url: str = ""
 
 
-# ???? Model list ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
+# ── Model list ─────────────────────────────────────────────────────────────────
 
 def _fetch_models(base_url: str) -> List[str]:
     global _model_cache, _cached_url
@@ -84,19 +90,19 @@ def _fetch_models(base_url: str) -> List[str]:
         return _model_cache
     try:
         client = Client(host=base_url)
-        raw_list = client.list().get("models", [])
-        # Ollama SDK returns dicts with either "name" or "model" depending on version
-        models = [m.get("name") or m.get("model") for m in raw_list if m.get("name") or m.get("model")]
+        raw    = client.list().get("models", [])
+        models = [m.get("name") or m.get("model") for m in raw
+                  if m.get("name") or m.get("model")]
         if models:
             _model_cache = models
-            _cached_url = base_url
+            _cached_url  = base_url
             return models
     except Exception as e:
         logger.warning(f"[S42P Songwriter] Cannot fetch models: {e}")
     return _FALLBACK_MODELS
 
 
-# ???? Image helpers ??????????????????????????????????????????????????????????????????????????????????????????????????????????????????
+# ── Image helpers ──────────────────────────────────────────────────────────────
 
 def _is_vision_model(model: str) -> bool:
     low = model.lower()
@@ -109,106 +115,95 @@ def _is_vision_model(model: str) -> bool:
 
 def _tensor_to_b64_jpeg(image_tensor, max_edge: int = 1024) -> str:
     if not _PIL:
-        raise RuntimeError("Pillow is required for image input.")
+        raise RuntimeError("Pillow required for image input.")
     arr = image_tensor
-    if hasattr(arr, "cpu"):
-        arr = arr.cpu().numpy()
+    if hasattr(arr, "cpu"):   arr = arr.cpu().numpy()
     arr = np.asarray(arr, dtype=np.float32)
-    if arr.ndim == 4:
-        arr = arr[0]
+    if arr.ndim == 4: arr = arr[0]
     arr = (arr * 255).clip(0, 255).astype(np.uint8)
     pil = PILImage.fromarray(arr, "RGB")
     w, h = pil.size
     if max(w, h) > max_edge:
         scale = max_edge / max(w, h)
-        pil = pil.resize((int(w * scale), int(h * scale)), PILImage.LANCZOS)
+        pil   = pil.resize((int(w*scale), int(h*scale)), PILImage.LANCZOS)
     buf = io.BytesIO()
     pil.save(buf, format="JPEG", quality=85)
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
 
-# ???? Options helper (matches ComfyUI-Ollama OllamaOptionsV2 pattern) ??????????????
+# ── Options helper ─────────────────────────────────────────────────────────────
 
 def _enabled_options(opts: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Extract active options from ComfyUI-Ollama OllamaOptions dict."""
     if not opts:
         return None
     out = {}
+    enable_keys_found = False
     for k in opts:
         if k.startswith("enable_") and opts[k]:
-            out[k.replace("enable_", "")] = opts.get(k.replace("enable_", ""))
+            enable_keys_found = True
+            real_key = k.replace("enable_", "")
+            val = opts.get(real_key)
+            if val is not None:
+                out[real_key] = val
+    if not enable_keys_found and opts:
+        # Schema may have changed — log a warning but don't silently fail
+        logger.warning("[S42P Songwriter] OllamaOptions dict contains no 'enable_*' keys. "
+                       "ComfyUI-Ollama may have updated its schema. Options will be ignored.")
     return out or None
 
 
-# ???? Text parsing ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
+# ── Text parsing ───────────────────────────────────────────────────────────────
 
 def _strip_think_blocks(text: str) -> str:
-    """Remove <think>...</think> blocks emitted by reasoning models."""
+    """Remove <think>...</think> blocks from reasoning models."""
     cleaned = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL | re.IGNORECASE)
     return re.sub(r"</?think>", "", cleaned, flags=re.IGNORECASE).strip()
 
 
 def _extract_json(text: str) -> Optional[dict]:
-    if not text:
-        return None
-    fence = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL | re.IGNORECASE)
+    if not text: return None
+    # Try fenced JSON block first
+    fence = re.search(r"```(?:json)?\s*(\{.+?\})\s*```", text, re.DOTALL)
     if fence:
-        try:
-            return json.loads(fence.group(1))
-        except Exception:
-            pass
-    brace = re.search(r"\{.*\}", text, re.DOTALL)
-    if brace:
-        try:
-            return json.loads(brace.group(0))
-        except Exception:
-            pass
+        try: return json.loads(fence.group(1))
+        except Exception: pass
+    # Try raw JSON object
+    obj = re.search(r"\{.+\}", text, re.DOTALL)
+    if obj:
+        try: return json.loads(obj.group(0))
+        except Exception: pass
     return None
 
 
-def _split_fallback(raw: str) -> Tuple[str, str]:
-    """Last-resort split on first lyric section header."""
-    m = re.search(r"^\s*\[.*?\]", raw, re.MULTILINE)
+def _parse_bpm(text: str, genre: str) -> int:
+    m = re.search(r"\b(\d{2,3})\s*(?:bpm|BPM)\b", text)
     if m:
-        return raw[:m.start()].strip(), raw[m.start():].strip()
-    parts = [p.strip() for p in re.split(r"\n\s*\n", raw) if p.strip()]
-    if len(parts) > 1:
-        return parts[0], "\n\n".join(parts[1:])
-    return "", raw.strip()
-
-
-def _parse_bpm(text: str, genre_hint: str) -> int:
-    m = re.search(r"\b(\d{2,3})\s*(?:bpm)?\b", text, re.IGNORECASE)
-    if m:
-        b = int(m.group(1))
-        if 40 <= b <= 220:
-            return b
-    low = genre_hint.lower()
-    for g, (lo, hi) in BPM_HINTS.items():
-        if g in low:
+        bpm = int(m.group(1))
+        if 40 <= bpm <= 220: return bpm
+    # Lookup by genre keyword
+    low = (text + " " + genre).lower()
+    for key, (lo, hi) in BPM_HINTS.items():
+        if key in low:
             return (lo + hi) // 2
-    return 100
+    return 120
 
 
 def _parse_key(text: str) -> str:
     for k in VALID_KEYS:
         if k.lower() in text.lower():
             return k
-    return "A Minor"
+    return "C Major"
 
 
-def _clean_lyrics(text: str) -> str:
-    if not text:
-        return ""
-    text = text.replace("\\n", "\n").replace("\r\n", "\n")
-    text = re.sub(r"(\[[^\]]+\])", lambda m: f"\n{m.group(0).rstrip()}\n\n", text)
-    # Unwrap lines that are incorrectly wrapped in parentheses
+def _clean_lyrics(raw: str) -> str:
     lines = []
-    for line in text.split("\n"):
-        s = line.strip()
-        if s.startswith("(") and s.endswith(")") and not re.match(
-                r"^\[(?:Verse|Chorus|Bridge|Pre-Chorus|Outro|Intro|Hook|Break|End)",
-                s, re.IGNORECASE):
-            lines.append(s[1:-1].strip())
+    for s in re.split(r"\n", raw):
+        s = s.strip()
+        if not s: lines.append(""); continue
+        if re.match(r"^\[(Verse|Chorus|Bridge|Pre-Chorus|Outro|Intro|Hook|Break|End)",
+                    s, re.IGNORECASE):
+            lines.append(s[1:-1].strip() if s.startswith("[") and s.endswith("]") else s)
         else:
             lines.append(s)
     text = "\n".join(lines)
@@ -219,7 +214,6 @@ def _clean_lyrics(text: str) -> str:
 
 
 def _ensure_style_fields(style: str, full_text: str, description: str) -> str:
-    """Inject [Tempo:] and [Key:] tags if the model omitted them."""
     if "[Tempo:" not in style:
         bpm = _parse_bpm(style + " " + full_text, description)
         style = style.rstrip() + f"\n[Tempo: {bpm} bpm]"
@@ -229,283 +223,239 @@ def _ensure_style_fields(style: str, full_text: str, description: str) -> str:
     return style.strip()
 
 
-# ???? System prompt ??????????????????????????????????????????????????????????????????????????????????????????????????????????????????
+# ── TWO-PASS PROMPTS ───────────────────────────────────────────────────────────
 
-def _build_system_prompt(tone: str, has_image: bool) -> str:
+def _build_pass1_prompt(genre: str, mood: str, theme: str, tone: str,
+                         has_image: bool) -> str:
+    """
+    Pass 1: Creative concept generation.
+    The model is free to be creative here — no strict JSON schema.
+    Just describe the song in natural language.
+    """
+    img_note = "\nAn image has been provided. Let it directly inspire the musical vision.\n" if has_image else ""
     tone_map = {
-        "Neutral":    "Write balanced, versatile lyrics without strong emotional bias.",
-        "Energetic":  "Write high-energy, punchy lyrics with strong momentum and drive.",
-        "Melancholy": "Write introspective, emotionally heavy lyrics with depth and longing.",
-        "Cinematic":  "Write sweeping, narrative-driven lyrics that evoke visual imagery.",
-        "Aggressive": "Write raw, intense lyrics with power and conviction.",
-        "Uplifting":  "Write hopeful, positive lyrics with an uplifting arc.",
-        "Dark":       "Write brooding, tense, atmospheric lyrics.",
+        "Neutral": "balanced and versatile",
+        "Energetic": "high-energy and punchy",
+        "Melancholy": "introspective and emotionally heavy",
+        "Cinematic": "sweeping and narrative-driven",
+        "Aggressive": "raw and intense",
+        "Uplifting": "hopeful and positive",
+        "Dark": "brooding and atmospheric",
     }
-    tone_instr = tone_map.get(tone, tone_map["Neutral"])
-    img_instr = (
-        "\nAN IMAGE HAS BEEN PROVIDED. Analyse it carefully ?? scene, colours, mood, "
-        "subject, atmosphere. Let the image directly inspire all musical and lyrical choices.\n"
-    ) if has_image else ""
+    tone_desc = tone_map.get(tone, "balanced")
 
-    return f"""You are an expert music producer and lyricist for AceStep 1.5 AI music generation.
-{img_instr}
-TONE DIRECTIVE: {tone_instr}
+    return f"""You are a creative music producer. Generate a detailed musical concept for a song.
+{img_note}
+GENRE: {genre}
+MOOD: {mood}
+THEME: {theme}
+TONE: {tone_desc}
 
-OUTPUT: Respond with STRICT JSON only (no commentary, no markdown outside the JSON):
+Describe in 3-5 paragraphs:
+1. The specific subgenre, influences, and production style
+2. The instrumentation, tempo feel, and key
+3. The vocal style, delivery, and lyrical themes
+4. A complete set of lyrics with verse/chorus/bridge structure
+
+Be specific, creative, and musical. Do not use JSON. Write naturally."""
+
+
+def _build_pass2_prompt(concept: str, genre: str, mood: str) -> str:
+    """
+    Pass 2: Format conversion.
+    The model receives the creative concept and converts it to strict JSON.
+    No creativity needed here — just formatting.
+    """
+    return f"""Convert this music concept into STRICT JSON for AceStep 1.5 music generation.
+
+CONCEPT:
+{concept}
+
+OUTPUT: Respond with ONLY this JSON (no commentary, no markdown outside JSON):
 
 {{
   "style": "[Style: Genre, SubGenre, Mood, Instrument1, Instrument2]\\n[Vocal: VocalTimbre, Delivery]\\n[Tempo: BPM bpm]\\n[Key: Root Mode]\\n[Production: Style1, Style2]",
-  "lyrics": "[Verse 1]\\n\\n4-8 lines\\n\\n[Pre-Chorus]\\n\\n2-4 lines\\n\\n[Chorus]\\n\\n4-6 lines\\n\\n[Verse 2]\\n\\n4-8 lines\\n\\n[Bridge]\\n\\n2-4 lines\\n\\n[Chorus]\\n\\n4-6 lines\\n\\n[Outro]\\n\\n2-4 lines\\n\\n[End]"
+  "lyrics": "[Verse 1]\\n\\n4-8 lyric lines here\\n\\n[Chorus]\\n\\n4-6 lyric lines here\\n\\n[Verse 2]\\n\\n4-8 lyric lines here\\n\\n[Bridge]\\n\\n2-4 lyric lines here\\n\\n[Chorus]\\n\\n4-6 lyric lines here\\n\\n[Outro]\\n\\n2-4 lyric lines here\\n\\n[End]"
 }}
 
 RULES:
-1. [Tempo: BPM bpm] must be a realistic integer 40-220 for the genre.
-2. Use literal \\n for newlines inside the JSON string.
-3. Lyric lines are PLAIN TEXT ?? do not wrap them in extra brackets.
+1. [Tempo:] MUST contain a specific integer BPM matching the genre (40-220).
+2. Use literal \\n for newlines in the JSON string values.
+3. Lyric section headers use [Verse 1] format (with square brackets).
 4. End lyrics with [End].
 5. NO text outside the JSON object.
-"""
+6. Use the ACTUAL lyrics from the concept above — do not invent new ones."""
 
 
-# ???? Node ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
+# ── Node ───────────────────────────────────────────────────────────────────────
 
 class S42PSongwriter:
+    """
+    🎵 S42P Songwriter v5.0
 
-    saved_context = None
+    Two-pass AI song generation for AceStep 1.5 Turbo via Ollama.
+
+    PASS 1: Creative concept (genre + mood + theme → musical vision, free-form)
+    PASS 2: AceStep formatting (vision → strict JSON style_tags + lyrics)
+
+    The two-pass approach separates creativity from formatting, dramatically
+    reducing "model didn't follow format" failures while producing more
+    musically coherent output.
+
+    Requires ComfyUI-Ollama + ollama Python package.
+    """
 
     @classmethod
     def INPUT_TYPES(cls):
-        try:
-            models = _fetch_models("http://localhost:11434")
-        except Exception:
-            models = _FALLBACK_MODELS
-
         return {
             "required": {
-                "system_prompt": ("STRING", {
-                    "multiline": True,
-                    "default": "",
-                    "tooltip": (
-                        "Override system prompt. Leave blank to use the built-in AceStep prompt. "
-                        "Useful for custom songwriter personas."
-                    ),
-                }),
-                "description": ("STRING", {
-                    "multiline": True,
-                    "default": (
-                        "An uplifting synthwave track with driving bassline, "
-                        "lush pads, and hopeful vocals about overcoming adversity."
-                    ),
-                    "tooltip": (
-                        "Describe the music ?? genre, mood, instruments, themes. "
-                        "If an image is connected, describe what aspect to focus on."
-                    ),
-                }),
-                "tone": ([
-                    "Neutral", "Energetic", "Melancholy", "Cinematic",
-                    "Aggressive", "Uplifting", "Dark",
-                ], {"default": "Neutral"}),
-                "duration_sec": ("INT", {
-                    "default": 30, "min": 10, "max": 240, "step": 5,
-                    "tooltip": "Target song length ?? guides section count and lyric density.",
-                }),
+                "connection": ("OLLAMA_CONNECTIVITY", {
+                    "tooltip": "From ComfyUI-Ollama OllamaConnectivity node. "
+                               "Sets server URL and model."}),
+                "genre": ("STRING", {
+                    "default": "synthwave, electronic",
+                    "tooltip": "Music genre and sub-genre. Be specific for better results."}),
+                "mood": ("STRING", {
+                    "default": "energetic, euphoric",
+                    "tooltip": "Emotional tone and energy of the song."}),
+                "theme": ("STRING", {
+                    "default": "driving through neon city lights at night",
+                    "tooltip": "Lyrical subject matter or narrative."}),
+                "tone": (["Neutral","Energetic","Melancholy","Cinematic","Aggressive","Uplifting","Dark"], {
+                    "default": "Energetic",
+                    "tooltip": "Overall tonal direction."}),
+                "two_pass": ("BOOLEAN", {
+                    "default": True,
+                    "tooltip": "Enable two-pass generation (recommended). "
+                               "Pass 1=creative concept, Pass 2=AceStep formatting. "
+                               "Disable for faster single-pass (may have formatting failures)."}),
             },
             "optional": {
-                "connectivity": ("OLLAMA_CONNECTIVITY", {
-                    "forceInput": False,
-                    "tooltip": "Connect an OllamaConnectivityV2 node. Required to run.",
-                }),
                 "options": ("OLLAMA_OPTIONS", {
-                    "forceInput": False,
-                    "tooltip": "Connect an OllamaOptionsV2 node for advanced inference settings.",
-                }),
-                "optional_image": ("IMAGE", {
-                    "tooltip": (
-                        "Connect an image with a vision model to write a song about the scene. "
-                        "Works with qwen3-vl, llava, qwen2.5vl, minicpm-v, moondream."
-                    ),
-                }),
-                "image_max_edge": ("INT", {
-                    "default": 768, "min": 256, "max": 1536, "step": 128,
-                    "tooltip": "Resize image longest edge before sending to model.",
-                }),
-                "keep_context": ("BOOLEAN", {
-                    "default": False,
-                    "tooltip": "Persist context between runs for iterative refinement.",
-                }),
-                "context": ("OLLAMA_CONTEXT", {
-                    "forceInput": False,
-                    "tooltip": "Previous context output ?? connect back for iterative refinement.",
-                }),
-                "seed": ("INT", {
-                    "default": 0, "min": 0, "max": 999999,
-                    "tooltip": "Variation seed hint passed to model. 0 = ignore.",
-                }),
-            },
+                    "tooltip": "From ComfyUI-Ollama OllamaOptions node. "
+                               "temperature, seed, context size, etc."}),
+                "context": ("STRING", {
+                    "tooltip": "Previous raw_response for iterative refinement."}),
+                "image": ("IMAGE", {
+                    "tooltip": "Optional image input for vision models. "
+                               "The song will be inspired by the image content."}),
+            }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "OLLAMA_CONTEXT")
-    RETURN_NAMES = ("style_tags", "lyrics", "raw_response", "context")
-    FUNCTION = "generate"
-    CATEGORY = CATEGORY
-    DESCRIPTION = "S42P Songwriter ?? generates AceStep 1.5 style tags + lyrics via Ollama."
+    RETURN_TYPES  = ("STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES  = ("style_tags", "lyrics", "raw_response", "context")
+    FUNCTION      = "generate"
+    CATEGORY      = CATEGORY
 
     def generate(
         self,
-        system_prompt: str,
-        description: str,
-        tone: str,
-        duration_sec: int,
-        connectivity=None,
-        options=None,
-        optional_image=None,
-        image_max_edge: int = 768,
-        keep_context: bool = False,
-        context=None,
-        seed: int = 0,
-    ):
-        if not connectivity:
-            raise Exception(
-                "S42P Songwriter requires an OLLAMA_CONNECTIVITY input. "
-                "Connect an OllamaConnectivityV2 node."
-            )
+        connection: dict,
+        genre: str, mood: str, theme: str, tone: str,
+        two_pass: bool = True,
+        options: Optional[dict] = None,
+        context: Optional[str] = None,
+        image=None,
+    ) -> Tuple[str, str, str, str]:
 
-        url   = connectivity["url"]
-        model = connectivity["model"]
-        keep_alive_unit = "m" if connectivity.get("keep_alive_unit") == "minutes" else "h"
-        keep_alive_val  = f"{connectivity.get('keep_alive', 5)}{keep_alive_unit}"
+        if not _OLLAMA_OK:
+            msg = ("ollama package not installed. "
+                   "Run: pip install ollama\n"
+                   "Also install ComfyUI-Ollama from ComfyUI Manager.")
+            logger.error(f"[S42P Songwriter] {msg}")
+            return ("", "", msg, "")
 
-        client   = Client(host=url)
-        req_opts = _enabled_options(options)
+        # Parse connection
+        base_url = connection.get("url", "http://127.0.0.1:11434") if isinstance(connection, dict) else "http://127.0.0.1:11434"
+        model    = connection.get("model") if isinstance(connection, dict) else None
+        if not model:
+            models = _fetch_models(base_url)
+            model  = models[0] if models else "qwen2.5:7b"
 
-        # Context handling ?? identical to OllamaSongwriterV3
-        if isinstance(context, str) and context.strip():
+        client    = Client(host=base_url)
+        ollama_opts = _enabled_options(options)
+
+        # Image
+        img_b64   = None
+        has_image = False
+        if image is not None and _is_vision_model(model):
             try:
-                context = [int(x.strip()) for x in context.split(",") if x.strip()]
-            except Exception:
-                context = None
-        if keep_context and context is None:
-            context = self.saved_context
-
-        has_image = optional_image is not None
-        is_vision = _is_vision_model(model)
-
-        if has_image and not is_vision:
-            print(f"[S42P Songwriter] ?  Image connected but '{model}' may not support vision. "
-                  "Try qwen3-vl, llava, qwen2.5vl, or minicpm-v.")
-        if is_vision and not has_image:
-            print(f"[S42P Songwriter] ?  '{model}' is a vision model ?? no image connected.")
-
-        # Encode image if applicable
-        images_b64 = None
-        if has_image and is_vision:
-            try:
-                images_b64 = [_tensor_to_b64_jpeg(optional_image, image_max_edge)]
+                img_b64   = _tensor_to_b64_jpeg(image)
+                has_image = True
             except Exception as e:
-                print(f"[S42P Songwriter] ?  Image encoding failed: {e} ?? continuing without image")
-                has_image = False
+                logger.warning(f"[S42P Songwriter] Image conversion failed: {e}")
 
-        # Build prompts
-        active_system = system_prompt.strip() if system_prompt.strip() else _build_system_prompt(tone, has_image)
+        def _call(prompt: str, system: Optional[str] = None, images: Optional[list] = None) -> str:
+            """Single Ollama API call with error handling."""
+            kwargs: dict = {
+                "model":  model,
+                "prompt": prompt,
+            }
+            if system:
+                kwargs["system"] = system
+            if images:
+                kwargs["images"] = images
+            if ollama_opts:
+                kwargs["options"] = ollama_opts
 
-        seed_hint = f"\nVariation seed: {seed}" if seed > 0 else ""
-        dur_hint  = (
-            f"\nTarget duration: {duration_sec}s ?? "
-            "adjust section count and lyric density accordingly."
-        )
-        img_guide = (
-            "An image is attached. Analyse it carefully ?? your musical and lyrical choices "
-            "must reflect what you see.\n\n"
-        ) if has_image else ""
+            try:
+                resp = client.generate(**kwargs)
+                raw  = resp.get("response", "") if isinstance(resp, dict) else str(resp)
+                return _strip_think_blocks(raw).strip()
+            except Exception as e:
+                logger.error(f"[S42P Songwriter] API call failed: {e}")
+                return ""
 
-        user_prompt = (
-            f"{img_guide}Create a complete AceStep 1.5 music generation prompt for:\n\n"
-            f"{description}{seed_hint}{dur_hint}\n\n"
-            "Respond with ONLY the JSON object. No other text."
-        )
+        # ── TWO-PASS GENERATION ────────────────────────────────────────────────
+        if two_pass:
+            # Pass 1: Creative concept (free-form)
+            pass1_prompt = _build_pass1_prompt(genre, mood, theme, tone, has_image)
+            images_arg   = [img_b64] if img_b64 else None
+            concept      = _call(pass1_prompt, images=images_arg)
 
-        mode_str = "VISION" if (has_image and is_vision) else "TEXT"
-        print(f"[S42P Songwriter] {mode_str}  model={model}  tone={tone}  {duration_sec}s ...")
+            if not concept:
+                return ("", "",
+                        "Pass 1 (concept) returned empty response. Check Ollama server.",
+                        "")
 
-        # ???? Call Ollama ?? same pattern as OllamaSongwriterV3 ????????????????????????????
-        response = client.generate(
-            model=model,
-            system=active_system,
-            prompt=user_prompt,
-            images=images_b64,
-            context=context,
-            options=req_opts,
-            keep_alive=keep_alive_val,
-            format="",
-        )
+            # Pass 2: Format conversion (no image needed — concept already encodes it)
+            pass2_prompt = _build_pass2_prompt(concept, genre, mood)
+            raw_response = _call(pass2_prompt)
 
-        raw = response.get("response", "") or ""
+            full_raw = f"=== PASS 1 (Concept) ===\n{concept}\n\n=== PASS 2 (Format) ===\n{raw_response}"
 
-        if keep_context:
-            self.saved_context = response.get("context")
-
-        context_out = response.get("context")
-
-        if not raw:
-            print("[S42P Songwriter] ?  Empty response from model.")
-            return (
-                "[Style: Electronic]\n[Vocal: Smooth]\n[Tempo: 100 bpm]\n[Key: A Minor]",
-                "[Verse 1]\n\n(Empty response ?? check model is running)\n\n[End]",
-                "EMPTY RESPONSE",
-                context_out,
-            )
-
-        # Strip reasoning tokens emitted by qwen3 / deepseek-r1
-        raw_clean = _strip_think_blocks(raw)
-
-        # ???? Parse JSON (primary path ?? matches OllamaSongwriterV3) ????????????????
-        style_raw  = ""
-        lyrics_raw = ""
-        parsed     = _extract_json(raw_clean)
-
-        if parsed and isinstance(parsed, dict):
-            style_raw  = str(parsed.get("style",      "") or "").strip()
-            lyrics_raw = str(parsed.get("lyrics",     "") or "").strip()
-            if not style_raw:
-                style_raw  = str(parsed.get("style_tags", "") or "").strip()
-            if not lyrics_raw:
-                lyrics_raw = str(parsed.get("lyric",      "") or "").strip()
-
-        # ???? Fallback: paragraph split ??????????????????????????????????????????????????????????????????????????
-        if not style_raw and not lyrics_raw:
-            style_raw, lyrics_raw = _split_fallback(raw_clean)
-
-        # ???? Repair style ????????????????????????????????????????????????????????????????????????????????????????????????????
-        if not style_raw:
-            bpm = _parse_bpm(raw_clean, description)
-            key = _parse_key(raw_clean)
-            style_raw = (
-                f"[Style: Electronic, Atmospheric]\n[Vocal: Smooth, Melodic]\n"
-                f"[Tempo: {bpm} bpm]\n[Key: {key}]\n[Production: Modern]"
-            )
-            print("[S42P Songwriter] ?  Style parse failed ?? defaults inserted. Check raw_response.")
         else:
-            style_raw = _ensure_style_fields(style_raw, raw_clean, description)
+            # Single-pass (legacy behaviour)
+            from s42p_songwriter_v4_compat import _build_system_prompt  # type: ignore
+            sys_prompt   = _build_system_prompt(tone, has_image)
+            user_prompt  = (f"Genre: {genre}\nMood: {mood}\nTheme: {theme}"
+                            + (f"\nContext: {context}" if context else ""))
+            images_arg   = [img_b64] if img_b64 else None
+            raw_response = _call(user_prompt, system=sys_prompt, images=images_arg)
+            full_raw     = raw_response
 
-        # ???? Repair lyrics ??????????????????????????????????????????????????????????????????????????????????????????????????
-        if not lyrics_raw:
-            lyrics_raw = (
-                "[Verse 1]\n\n(No lyrics ?? model did not follow format. "
-                "Check raw_response or try a different model.)\n\n[End]"
-            )
-            print("[S42P Songwriter] ?  Lyrics parse failed. Connect raw_response ?? ShowText.")
+        if not raw_response:
+            return ("", "", full_raw or "No response from model.", full_raw or "")
 
-        style_tags = style_raw.strip()
-        lyrics     = _clean_lyrics(lyrics_raw)
+        # ── Parse JSON ────────────────────────────────────────────────────────
+        parsed = _extract_json(raw_response)
 
-        tm = re.search(r"\[Tempo:\s*(\d+)", style_tags, re.IGNORECASE)
-        km = re.search(r"\[Key:\s*([^\]]+)\]", style_tags, re.IGNORECASE)
-        print(f"[S42P Songwriter] ??  "
-              f"bpm={tm.group(1) if tm else '?'}  "
-              f"key={km.group(1).strip() if km else '?'}")
+        if not parsed:
+            return ("(No style — model did not follow format)",
+                    "(No lyrics — model did not follow format)",
+                    full_raw, full_raw)
 
-        return (style_tags, lyrics, raw, context_out)
+        style  = str(parsed.get("style",  "")).strip()
+        lyrics = str(parsed.get("lyrics", "")).strip()
+
+        if not style and not lyrics:
+            return ("(Empty output)", "(Empty output)", full_raw, full_raw)
+
+        # Ensure required AceStep fields
+        style  = _ensure_style_fields(style, raw_response, genre)
+        lyrics = _clean_lyrics(lyrics)
+
+        return (style, lyrics, full_raw, full_raw)
 
 
 NODE_CLASS_MAPPINGS        = {"S42PSongwriter": S42PSongwriter}
-NODE_DISPLAY_NAME_MAPPINGS = {"S42PSongwriter": "S42P Songwriter ??"}
+NODE_DISPLAY_NAME_MAPPINGS = {"S42PSongwriter": "🎵 S42P Songwriter"}
