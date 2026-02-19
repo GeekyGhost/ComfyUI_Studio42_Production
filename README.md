@@ -5,15 +5,7 @@
 Designed for **AceStep 1.5 Turbo + Wan + ComfyUI Portable** on RTX-class hardware.  
 All DSP runs on **CPU** — your GPU stays free for generation.
 
-
-Work in Progress
 ---
-
-
-
-https://github.com/user-attachments/assets/2297b64b-26e5-43ba-bc9d-e9ce6db62bfa
-
-
 
 ## What's New in v4.0
 
